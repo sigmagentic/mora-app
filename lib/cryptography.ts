@@ -31,12 +31,18 @@ export async function deriveKEK(
 }
 
 export async function isPRFSupported(): Promise<boolean> {
-  try {
-    const caps = await PublicKeyCredential.getClientCapabilities();
+    let caps: any = null;
+    try {
+      caps = await (PublicKeyCredential as any)?.getClientCapabilities();
+    } catch (error) {
+      console.error("Error getting client capabilities:", error);
+      return false;
+    }
+    if (!caps) {
+      return false;
+    }
     return caps["extension:prf"] === true;
-  } catch {
-    return false;
-  }
+  
 }
 
 export function base64URLToUint8(base64url: string): Uint8Array {
@@ -74,7 +80,7 @@ export async function getCredentialsWithPrf(
             first: prfSaltUint8,
           },
         },
-      },
+      } as any,
     },
   });
 
@@ -86,7 +92,7 @@ export async function deriveKEKFromPRF(
 ): Promise<CryptoKey> {
   const keyMaterial = await crypto.subtle.importKey(
     "raw",
-    prfBytes,
+    prfBytes as any,
     "HKDF",
     false,
     ["deriveKey"]

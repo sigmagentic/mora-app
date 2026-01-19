@@ -491,10 +491,10 @@ export function UserProfile({
     const rawDEK = await crypto.subtle.decrypt(
       {
         name: "AES-GCM",
-        iv: dekIV,
+        iv: dekIV as any,
       },
       vmk,
-      encryptedDEK
+      encryptedDEK as any
     );
 
     return crypto.subtle.importKey("raw", rawDEK, { name: "AES-GCM" }, false, [
@@ -511,10 +511,10 @@ export function UserProfile({
     return crypto.subtle.decrypt(
       {
         name: "AES-GCM",
-        iv: fileIV,
+        iv: fileIV as any,
       },
       dek,
-      encryptedFile
+      encryptedFile as any
     );
   }
 
@@ -781,9 +781,9 @@ export function UserProfile({
 
     try {
       const vmkRaw = await crypto.subtle.decrypt(
-        { name: "AES-GCM", iv },
+        { name: "AES-GCM", iv: iv as any },
         kek,
-        encryptedVMK
+        encryptedVMK as any
       );
 
       CACHED_VMK = await crypto.subtle.importKey(
