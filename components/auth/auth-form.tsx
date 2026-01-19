@@ -228,8 +228,18 @@ export function AuthForm({ onAuthSuccess }: AuthFormProps) {
 
         credential = await getCredentialsWithPrf(prfSaltUnit8, beginData);
 
-        const prfResult =
-          credential?.getClientExtensionResults()?.prf?.results?.first;
+        let prfResult = null;
+
+        try {
+          prfResult = (credential as any)?.getClientExtensionResults()?.prf?.results?.first;
+        } catch (error) {
+          console.error("Error obtaining PRF result from authenticator:", error);
+          prfResult = null;
+        }
+
+        if (!prfResult) {
+          throw new Error("No PRF result found from authenticator");
+        }
 
         console.log("Obtained PRF result from authenticator:", prfResult);
 
