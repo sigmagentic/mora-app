@@ -13,7 +13,7 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { User, Trash2, Download, Edit, Loader2 } from "lucide-react";
+import { User, Trash2, Download, Edit, Loader2, ChevronDown, ChevronUp, Power, KeyRound } from "lucide-react";
 import { uint8ToBase64, base64ToUint8 } from "@/lib/utils";
 import { deriveKEK, isPRFSupported } from "@/lib/cryptography";
 import { Textarea } from "../ui/textarea";
@@ -24,6 +24,7 @@ import {
   GameQuestionAnswer,
 } from "@/types/types";
 import { PrivateDataGame } from "../PrivateDataGame/PrivateDataGame";
+import { buildMoraResponsePayload, deriveMoraIdentitySecret, AnswerBit } from "@/lib/answer-commitments";
 
 interface UserProfileProps {
   user: AppUser;
@@ -54,6 +55,7 @@ export function UserProfile({
     useState<boolean>(false);
   const [committingPrfSupportToServer, setCommittingPrfSupportToServer] =
     useState(false);
+  const [profileCardExpanded, setProfileCardExpanded] = useState(false);
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -108,7 +110,6 @@ export function UserProfile({
 
   useEffect(() => {
     fetchStoredFiles();
-    console.log("HERE! 1");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -120,21 +121,16 @@ export function UserProfile({
 
   useEffect(() => {
     // console.log("user profile updated:", user);
-    console.log("HERE! 2");
 
     async function checkAsyncThings() {
       if (!user.encryptedVmk || !user.kekSalt || !user.vmkIv) {
-        console.log("HERE! 3");
         setVaultMode("create");
       } else {
-        console.log("HERE! 4");
         // here the user already has the password so we need them to unwrap the VMK
         // ... BUT, if we have the PRF metadata available, we can automatically unwrap it with the PRK KEK
         if (prfKek && user.prfEncryptedVmk && user.prfVmkIv) {
-          console.log("HERE! 5");
           await handleVaultPasswordBasedVmkUnwrapping(true);
         } else {
-          console.log("HERE! 6");
           // PR, we ask them to re-enter their vault password
           setVaultMode("enter");
         }
@@ -150,7 +146,6 @@ export function UserProfile({
   useEffect(() => {
     // user is in secure game mode, and has already created a secure file log -- so we need to keep the file open and in edit mode
     if (storedSecureNoteForPrivateGameFile && inSecureGameMode) {
-      console.log("HERE! 7");
       setSecureNoteEditModeFile(storedSecureNoteForPrivateGameFile);
       decryptAndLoadFileToEdit(storedSecureNoteForPrivateGameFile);
     }
@@ -159,7 +154,6 @@ export function UserProfile({
   // THIS IS WHERE the app is actually ready to use!
   useEffect(() => {
     if (vmkInMemory) {
-      console.log("HERE! 8");
       setInSecureGameMode(true); // just go into secure game mode! (triggers above event IF the user already setup the vault for game data)
     }
   }, [vmkInMemory]);
@@ -893,8 +887,6 @@ export function UserProfile({
       answeredOnTs: Date.now()
     */
 
-    debugger;
-
     let saveStr = `questionId: ${question.id}\n`;
     saveStr += `question: ${question.text}\n`;
     saveStr += `answerId: ${answer.id}\n`;
@@ -916,137 +908,233 @@ export function UserProfile({
     return true;
   };
 
+  // e.g. handleAnswerChallengeGeneration(4, 12200126)
+  const [commitmentTestInput, setCommitmentTestInput] = useState<string>("");
+  const test_handleAnswerChallengeGeneration = async (input: string) => {
+    debugger;
+    const [questionId, epochId, answerBit] = input.split(",");
+    await handleAnswerChallengeGenerationAndCommitment(parseInt(questionId), epochId, parseInt(answerBit) as AnswerBit);
+  };
+
+  const handleAnswerChallengeGenerationAndCommitment = async (questionId: number, epochId: string, answerBit: AnswerBit) : Promise<boolean> => {
+    if (!CACHED_VMK) {
+      alert("VMK not available in memory.");
+      return false;
+    }
+
+    const moraIdentitySecret  = await deriveMoraIdentitySecret(CACHED_VMK); 
+
+    const {payload, salt} = await buildMoraResponsePayload({
+      moraIdentitySecret,
+      questionId,
+      epochId,
+      answerBit,
+    });
+
+    // commitment: send to backend
+    // salt: keep client-side only (or encrypt later for Arcium or FHE if needed) // for now, just keep it in memory
+
+    // ok, payload we need to save this via a new POST method to a new API route /api/private-data-game/save-answer-commitment
+    const res = await fetch("/api/private-data-game/save-answer-commitment", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ payload }),
+    });
+
+    const body = await res.json();
+
+    if (!res.ok) {
+      console.error("Save answer commitment error:", body);
+      alert("Failed to save answer commitment." + body.error || "Unknown error");
+      return false; 
+    }
+
+    alert("Answer commitment saved successfully.");
+    return true;
+  };
+
   return (
     <div className="w-full">
       {vmkInMemory || BYPASS_VMK_UI_CHECKS ? (
         <div className="w-full flex flex-row justify-around space-x-4">
-          <Card className="mt-4 border-0 shadow-2xl bg-white/95 backdrop-blur-sm w-full max-w-sm">
-            <CardHeader className="text-center pb-4 px-4 sm:px-6">
-              <div className="flex flex-col items-center space-y-3 sm:space-y-4">
-                <Avatar className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-blue-500 to-purple-600">
-                  <AvatarFallback className="text-white text-lg sm:text-xl font-bold">
-                    {getInitials(user.displayName || user.username)}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <CardTitle className="text-xl sm:text-2xl font-bold text-gray-900">
-                    <span className="text-blue-600">{">"}</span>{" "}
-                    {user.displayName || user.username}
-                  </CardTitle>
-                  {user.displayName && (
-                    <CardDescription className="text-gray-600">
-                      @{user.username}
-                    </CardDescription>
-                  )}
-                </div>
-                <Badge
-                  variant="secondary"
-                  className="bg-green-100 text-green-800 border-green-200 text-xs sm:text-sm"
+          {!profileCardExpanded ? (
+            /* Minimized view: small circle icon buttons */
+            <div className="profile-card mt-4 flex flex-col items-center justify-top gap-2 p-2 pt-5 border-0 shadow-2xl bg-white/95 backdrop-blur-sm rounded-full w-fit">
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-9 w-9 rounded-full shrink-0"
+                onClick={() => setProfileCardExpanded(true)}
+                title="Expand profile"
+              >
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+              <Button
+                size="icon"
+                variant="ghost"
+                className="h-9 w-9 rounded-full shrink-0 text-red-600 hover:bg-red-50 hover:text-red-700"
+                onClick={handleLogout}
+                disabled={isLoggingOut}
+                title="Logout"
+              >
+                {isLoggingOut ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Power className="h-4 w-4" />
+                )}
+              </Button>
+              {isDevicePRFSupported &&
+                prfKek &&
+                !user.prfEncryptedVmk && (
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-9 w-9 rounded-full shrink-0 text-green-600 hover:bg-green-50 hover:text-green-700"
+                    onClick={handleCommitLazyPRFSupport}
+                    disabled={committingPrfSupportToServer}
+                    title="Commit pure-biometrics encryption support"
+                  >
+                    {committingPrfSupportToServer ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <KeyRound className="h-4 w-4" />
+                    )}
+                  </Button>
+                )}
+            </div>
+          ) : (
+            <Card className="profile-card mt-4 border-0 shadow-2xl bg-white/95 backdrop-blur-sm w-full max-w-sm">
+              <CardHeader className="text-center pb-4 px-4 sm:px-6 relative">
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="absolute top-2 right-2 h-8 w-8 rounded-full shrink-0"
+                  onClick={() => setProfileCardExpanded(false)}
+                  title="Minimize profile"
                 >
-                  <span className="text-xs mr-1">✓</span>
-                  authenticated
-                </Badge>
-              </div>
-            </CardHeader>
-
-            <CardContent className="space-y-3 sm:space-y-4 px-4 sm:px-6">
-              <div className="space-y-2 sm:space-y-3">
-                <div className="flex items-center space-x-3 p-2 sm:p-3 bg-gray-50 rounded-lg">
-                  <span className="text-gray-500 text-xs sm:text-sm">$</span>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs sm:text-sm font-medium text-gray-700">
-                      username:
-                    </p>
-                    <p className="text-xs sm:text-sm text-gray-600 truncate">
-                      {user.username}
-                    </p>
+                  <ChevronUp className="h-4 w-4" />
+                </Button>
+                <div className="flex flex-col items-center space-y-3 sm:space-y-4">
+                  <Avatar className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-blue-500 to-purple-600">
+                    <AvatarFallback className="text-white text-lg sm:text-xl font-bold">
+                      {getInitials(user.displayName || user.username)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <CardTitle className="text-xl sm:text-2xl font-bold text-gray-900">
+                      <span className="text-blue-600">{">"}</span>{" "}
+                      {user.displayName || user.username}
+                    </CardTitle>
+                    {user.displayName && (
+                      <CardDescription className="text-gray-600">
+                        @{user.username}
+                      </CardDescription>
+                    )}
                   </div>
+                  <Badge
+                    variant="secondary"
+                    className="bg-green-100 text-green-800 border-green-200 text-xs sm:text-sm"
+                  >
+                    <span className="text-xs mr-1">✓</span>
+                    authenticated
+                  </Badge>
                 </div>
+              </CardHeader>
 
-                {user.email && (
+              <CardContent className="space-y-3 sm:space-y-4 px-4 sm:px-6">
+                <div className="space-y-2 sm:space-y-3">
                   <div className="flex items-center space-x-3 p-2 sm:p-3 bg-gray-50 rounded-lg">
-                    <span className="text-gray-500 text-xs sm:text-sm">@</span>
+                    <span className="text-gray-500 text-xs sm:text-sm">$</span>
                     <div className="min-w-0 flex-1">
                       <p className="text-xs sm:text-sm font-medium text-gray-700">
-                        email:
+                        username:
                       </p>
                       <p className="text-xs sm:text-sm text-gray-600 truncate">
-                        {user.email}
+                        {user.username}
                       </p>
                     </div>
                   </div>
-                )}
 
-                {isDevicePRFSupported && (
-                  <div className="flex items-center space-x-3 p-2 sm:p-3 bg-gray-50 rounded-lg">
-                    <span className="text-gray-500 text-xs sm:text-sm">^</span>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs sm:text-xs font-medium text-gray-700">
-                        Biometrics-Powered Data Encryption:
-                      </p>
-                      {/* <p className="text-xs sm:text-sm text-green-600 font-medium">
-                        <span>
-                          Does your device support this?{" "}
-                          {isDevicePRFSupported ? "Yes" : "No"}
-                        </span>
-                      </p> */}
-                      <p className="text-xs sm:text-sm text-green-600 font-medium">
-                        {prfKek ? (
-                          <>
-                            <span className="text-green-600 text-[10px]">
-                              ✓ Biometrics vault key generated{" "}
-                              {user.prfEncryptedVmk && " and committed!"}
+                  {user.email && (
+                    <div className="flex items-center space-x-3 p-2 sm:p-3 bg-gray-50 rounded-lg">
+                      <span className="text-gray-500 text-xs sm:text-sm">@</span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs sm:text-sm font-medium text-gray-700">
+                          email:
+                        </p>
+                        <p className="text-xs sm:text-sm text-gray-600 truncate">
+                          {user.email}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {isDevicePRFSupported && (
+                    <div className="flex items-center space-x-3 p-2 sm:p-3 bg-gray-50 rounded-lg">
+                      <span className="text-gray-500 text-xs sm:text-sm">^</span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs sm:text-xs font-medium text-gray-700">
+                          Biometrics-Powered Data Encryption:
+                        </p>
+                        <p className="text-xs sm:text-sm text-green-600 font-medium">
+                          {prfKek ? (
+                            <>
+                              <span className="text-green-600 text-[10px]">
+                                ✓ Biometrics vault key generated{" "}
+                                {user.prfEncryptedVmk && " and committed!"}
+                              </span>
+
+                              {!user.prfEncryptedVmk && (
+                                <div className="pt-2">
+                                  <Button
+                                    disabled={committingPrfSupportToServer}
+                                    onClick={handleCommitLazyPRFSupport}
+                                    variant="outline"
+                                    className="text-[10px]"
+                                  >
+                                    {committingPrfSupportToServer
+                                      ? "Committing ..."
+                                      : "Commit pure-biometrics encryption support"}
+                                  </Button>
+                                </div>
+                              )}
+                            </>
+                          ) : (
+                            <span className="text-red-600 text-[10px]">
+                              ✗ Biometrics vault key not yet generated. But your
+                              data is still fully encrypted with zero-knowledge
+                              privacy using your password, which you will need to
+                              enter each time you login. Once a Pure-Biometrics
+                              key is added to your account, you dont need to use
+                              your password each time to access your data! This
+                              key will be generated on your next login{" "}
+                              {user.prfEncryptedVmk &&
+                                " but committed in the past session!"}
                             </span>
-
-                            {!user.prfEncryptedVmk && (
-                              <div className="pt-2">
-                                <Button
-                                  disabled={committingPrfSupportToServer}
-                                  onClick={handleCommitLazyPRFSupport}
-                                  variant="outline"
-                                  className="text-[10px]"
-                                >
-                                  {committingPrfSupportToServer
-                                    ? "Committing ..."
-                                    : "Commit pure-biometrics encryption support"}
-                                </Button>
-                              </div>
-                            )}
-                          </>
-                        ) : (
-                          <span className="text-red-600 text-[10px]">
-                            ✗ Biometrics vault key not yet generated. But your
-                            data is still fully encrypted with zero-knowledge
-                            privacy using your password, which you will need to
-                            enter each time you login. Once a Pure-Biometrics
-                            key is added to your account, you dont need to use
-                            your password each time to access your data! This
-                            key will be generated on your next login{" "}
-                            {user.prfEncryptedVmk &&
-                              " but committed in the past session!"}
-                          </span>
-                        )}
-                      </p>
+                          )}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
 
-              <div className="pt-3 sm:pt-4 border-t">
-                <Button
-                  onClick={handleLogout}
-                  disabled={isLoggingOut}
-                  variant="outline"
-                  className="w-full h-10 sm:h-11 border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 text-sm sm:text-base"
-                >
-                  <span className="text-xs mr-2">$</span>
-                  {isLoggingOut ? "logout..." : "logout"}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+                <div className="pt-3 sm:pt-4 border-t">
+                  <Button
+                    onClick={handleLogout}
+                    disabled={isLoggingOut}
+                    variant="outline"
+                    className="w-full h-10 sm:h-11 border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 text-sm sm:text-base"
+                  >
+                    <span className="text-xs mr-2">$</span>
+                    {isLoggingOut ? "logout..." : "logout"}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
-          <Card className="mt-4 border-0 shadow-2xl bg-white/95 backdrop-blur-sm w-full">
+          <Card className="content-card mt-4 border-0 shadow-2xl bg-white/95 backdrop-blur-sm w-full">
             <CardContent className="px-4 sm:px-6">
               <Tabs defaultValue="privacy-data-game" className="w-full">
                 <TabsList
@@ -1078,7 +1166,7 @@ export function UserProfile({
                 </TabsList>
                 {/* Private Data Game */}
                 <TabsContent value="privacy-data-game">
-                  <Card className="mt-4">
+                  <Card className="mt-4 border-none">
                     <CardHeader className="px-4 sm:px-6">
                       <div className="flex flex-col">
                         <CardTitle className="text-lg sm:text-xl font-semibold">
@@ -1125,6 +1213,7 @@ export function UserProfile({
                                 onAnswerSelection={
                                   handlePrivateDataGameAnswerSelection
                                 }
+                                onAnswerCommitment={handleAnswerChallengeGenerationAndCommitment}
                               />
                             </div>
                             <div className="p-2 sm:p-3 bg-gray-50 rounded-lg">
@@ -1198,6 +1287,22 @@ export function UserProfile({
                             </div>
                           </>
                         )}
+
+                    <div>
+                            <p>Testing commitment generation...</p>
+                            <Input
+                            type="text"                                
+                            placeholder="question_id:X,epochId:Y,answerBit:Z"                                
+                            className="h-10 sm:h-11 text-sm"
+                            value={commitmentTestInput}
+                            onChange={(e) => setCommitmentTestInput(e.target.value as string)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                test_handleAnswerChallengeGeneration(commitmentTestInput);
+                              }
+                            }}
+                          />
+                          </div>
 
                         <div>
                           {fetchingStoredFiles && (
@@ -1752,9 +1857,6 @@ export function UserProfile({
                 </div>
               ) : (
                 <div className="space-y-3">
-                  <p className="text-xs sm:text-sm font-medium text-gray-700">
-                    Enter Master Vault Password
-                  </p>
                   <div className="p-2 sm:p-3 bg-gray-50 rounded-lg space-y-2">
                     <Input
                       type="password"

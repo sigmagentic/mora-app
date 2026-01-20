@@ -1,12 +1,20 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { AppUser, GameQuestion, GameQuestionAnswer } from "@/types/types";
+import { GameQuestion, GameQuestionAnswer } from "@/types/types";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { getGameHourSlot, getCurrentDateDDMMYY } from "@/lib/game-epoch";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 import { Textarea } from "../ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { AnswerBit } from "@/lib/answer-commitments";
+import { getEpochId } from "@/lib/game-epoch";
 
 let BYPASS_GAME_DEV_MODE = true;
 
@@ -17,11 +25,17 @@ interface PrivateDataGameProps {
     answer: GameQuestionAnswer,
     answerReasoning?: string
   ) => Promise<boolean>;
+  onAnswerCommitment: (
+    questionId: number,
+    epochId: string,
+    answerBit: AnswerBit
+  ) => Promise<boolean>;
 }
 
 export function PrivateDataGame({
   currentGameSecureNoteStorage,
   onAnswerSelection,
+  onAnswerCommitment,
 }: PrivateDataGameProps) {
   const [randomQuestion, setRandomQuestion] = useState<GameQuestion | null>(
     null
@@ -47,24 +61,17 @@ export function PrivateDataGame({
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
-      const utcHour = now.getUTCHours();
-      const hourNum = utcHour + 1; // 1-24
-      setCurrentHour(hourNum);
+      setCurrentHour(getGameHourSlot(now));
 
-      // Calculate countdown to next hour
+      // Countdown to next UTC hour (use raw 0–23 for setUTCHours; +1 is “next hour”)
       const nextHour = new Date(now);
-      nextHour.setUTCHours(utcHour + 1, 0, 0, 0);
+      nextHour.setUTCHours(now.getUTCHours() + 1, 0, 0, 0);
       const diff = nextHour.getTime() - now.getTime();
       const minutes = Math.floor(diff / 60000);
       const seconds = Math.floor((diff % 60000) / 1000);
       setCountdown(`${minutes}m ${seconds}s`);
 
-      // Check and update date
-      const dd = String(now.getUTCDate()).padStart(2, "0");
-      const mm = String(now.getUTCMonth() + 1).padStart(2, "0");
-      const yy = String(now.getUTCFullYear()).slice(-2);
-      const currentDate = `${dd}-${mm}-${yy}`;
-
+      const currentDate = getCurrentDateDDMMYY(now);
       if (currentDate !== lastPlayedDate) {
         localStorage.setItem("x-gameplay-played-last-ddmmyy", currentDate);
         localStorage.setItem("x-gameplay-played-hr-log", "");
@@ -78,21 +85,6 @@ export function PrivateDataGame({
     return () => clearInterval(interval);
   }, [lastPlayedDate]);
 
-  useEffect(() => {
-    if (randomQuestion) {
-      const element = document.querySelector(".question-view-container");
-      if (element) {
-        element.scrollIntoView({ behavior: "smooth" });
-      }
-    } else {
-      window.scrollTo({
-        top: 0,
-        left: 0,
-        behavior: "smooth",
-      });
-    }
-  }, [randomQuestion]);
-
   const getRandomQuestion = async () => {
     try {
       setFetchingActiveQuestion(true);
@@ -103,6 +95,12 @@ export function PrivateDataGame({
 
       if (!res.ok) {
         console.error("Failed to fetch stored files:", body);
+
+        if (body.error) {
+          alert("ERROR: " + body.error);
+          return;
+        }
+
         return;
       }
 
@@ -130,6 +128,7 @@ export function PrivateDataGame({
   };
 
   const handleCommitAnswer = async () => {
+    debugger;
     if (!randomQuestion || !selectedAnswer) {
       alert("Unable to commit");
       return;
@@ -140,7 +139,6 @@ export function PrivateDataGame({
     // ... it only protects in the event somethign on the UI fails and the user is able to commit
     // ... and answer for the same quesion multiple times in a hour
     // ideally we check local storage first, and THEN we check currentGameSecureNoteStorage
-    debugger;
     console.log(
       "localstorage - ",
       localStorage.getItem("x-gameplay-played-hr-log")
@@ -165,23 +163,31 @@ export function PrivateDataGame({
     // simple check, just get the first saved quesion Id  from currentGameSecureNoteStorage and check if questionId: X is '`questionId: ${question.id}'
     // ... it's not the best check, as all we are doing is seeing if the last saved quesion id is the same
     // ... it may cause problems IF for some reason the quesion has repeated 2 hours in a row (which should NOT happen)
-    var subStringOfLastSavedQuestionId = currentGameSecureNoteStorage
-      .substr(
-        currentGameSecureNoteStorage.indexOf("questionId:"),
-        currentGameSecureNoteStorage.indexOf("question:")
-      )
-      .trim();
+    // var subStringOfLastSavedQuestionId = currentGameSecureNoteStorage
+    //   .substr(
+    //     currentGameSecureNoteStorage.indexOf("questionId:"),
+    //     currentGameSecureNoteStorage.indexOf("question:")
+    //   )
+    //   .trim();
 
-    if (subStringOfLastSavedQuestionId === `questionId: ${randomQuestion.id}`) {
-      alert(
-        "E2: You've already responded to this question during this game round/hour"
-      );
-      return;
-    }
+    // if (subStringOfLastSavedQuestionId === `questionId: ${randomQuestion.id}`) {
+    //   alert(
+    //     "E2: You've already responded to this question during this game round/hour"
+    //   );
+    //   return;
+    // }
 
     setIsCommittingAnswer(true);
 
+
+    const now = new Date();
+    const _isActiveHHDDMMYY = getEpochId(now); // HHDDMMYY, hour 1–24, month 1–12
+
+    await onAnswerCommitment(randomQuestion!.id, _isActiveHHDDMMYY, selectedAnswer!.id === 1 ? 0 : 1);
+
     await onAnswerSelection(randomQuestion!, selectedAnswer!, reasoning);
+
+
 
     // Update played hours
     const newPlayed = [...playedHours, currentHour];
@@ -195,12 +201,6 @@ export function PrivateDataGame({
     }, 2000);
   };
 
-  // const handleNewQuestion = async () => {
-  //   const _activeQuestion = await getRandomQuestion();
-
-  //   setRandomQuestion(_activeQuestion);
-  //   setSelectedAnswer(null);
-  // };
 
   const hours = Array.from({ length: 24 }, (_, i) => i + 1);
 
@@ -265,84 +265,87 @@ export function PrivateDataGame({
         })}
       </div>
 
-      {selectedHour === currentHour && randomQuestion && (
-        <div className="question-view-container">
-          <Card className="w-full">
-            <CardHeader>
-              <CardTitle>Question</CardTitle>
-            </CardHeader>
-            <CardContent
-              className={`space-y-4 ${
-                isCommittingAnswer ? "opacity-50 cursor-not-allowed" : ""
-              }`}
-            >
-              <img src={randomQuestion.img} alt="Question" />
-              <p className="text-sm">{randomQuestion.text}</p>
-              <RadioGroup
-                value={selectedAnswer?.id.toString() || ""}
-                onValueChange={(value) =>
-                  setSelectedAnswer(
-                    randomQuestion.answers.find(
-                      (a) => a.id.toString() === value
-                    ) || null
-                  )
-                }
+      <Dialog
+        open={selectedHour === currentHour && randomQuestion != null}
+        onOpenChange={(open) => {
+          if (!open && !isCommittingAnswer) {
+            setRandomQuestion(null);
+            setSelectedHour(null);
+          }
+        }}
+      >
+        <DialogContent className="max-w-lg gap-4 sm:max-w-xl">
+          {randomQuestion && (
+            <div className="question-view-container space-y-4">
+              <DialogHeader>
+                <DialogTitle>Question</DialogTitle>
+              </DialogHeader>
+              <div
+                className={`space-y-4 ${
+                  isCommittingAnswer ? "opacity-50 cursor-not-allowed" : ""
+                }`}
               >
-                {randomQuestion.answers.map((answer) => (
-                  <div
-                    key={answer.id}
-                    className="flex items-center space-x-2 mt-2"
-                  >
-                    <RadioGroupItem
-                      value={answer.id.toString()}
-                      id={answer.id.toString()}
-                    />
-                    <label
-                      htmlFor={answer.id.toString()}
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                <img src={randomQuestion.img} alt="Question" />
+                <p className="text-sm">{randomQuestion.text}</p>
+                <RadioGroup
+                  value={selectedAnswer?.id.toString() || ""}
+                  onValueChange={(value) =>
+                    setSelectedAnswer(
+                      randomQuestion.answers.find(
+                        (a) => a.id.toString() === value
+                      ) || null
+                    )
+                  }
+                >
+                  {randomQuestion.answers.map((answer) => (
+                    <div
+                      key={answer.id}
+                      className="flex items-center space-x-2 mt-2"
                     >
-                      {answer.text}
-                    </label>
-                  </div>
-                ))}
-              </RadioGroup>
+                      <RadioGroupItem
+                        value={answer.id.toString()}
+                        id={answer.id.toString()}
+                      />
+                      <label
+                        htmlFor={answer.id.toString()}
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                      >
+                        {answer.text}
+                      </label>
+                    </div>
+                  ))}
+                </RadioGroup>
 
-              <div className="p-2 sm:p-3 bg-gray-50 rounded-lg">
-                <p className="text-xs py-2">
-                  A short &quot;reasoning&quot; for your answer is optional but
-                  highly desirable! What is your honest reasoning for this
-                  answer? why did you pick it? (250 characters max).
-                </p>
-                <Textarea
-                  value={reasoning}
-                  onChange={(e) => setReasoning(e.target.value)}
-                  required
-                  maxLength={250}
-                  disabled={isCommittingAnswer}
-                  placeholder="Write it in 'first-person'. e.g. I picked this because I felt the person deserved what happened to them as they seemed bad."
-                  className="h-10 sm:h-11 text-xs"
-                />
+                <div className="p-2 sm:p-3 bg-gray-50 rounded-lg">
+                  <p className="text-xs py-2">
+                    A short &quot;reasoning&quot; for your answer is optional but
+                    highly desirable! What is your honest reasoning for this
+                    answer? why did you pick it? (250 characters max).
+                  </p>
+                  <Textarea
+                    value={reasoning}
+                    onChange={(e) => setReasoning(e.target.value)}
+                    required
+                    maxLength={250}
+                    disabled={isCommittingAnswer}
+                    placeholder="Write it in 'first-person'. e.g. I picked this because I felt the person deserved what happened to them as they seemed bad."
+                    className="h-10 sm:h-11 text-xs"
+                  />
+                </div>
+                <Button
+                  onClick={() => selectedAnswer && handleCommitAnswer()}
+                  disabled={!selectedAnswer}
+                  className="w-full"
+                >
+                  {isCommittingAnswer
+                    ? `Committing to your private vault...`
+                    : `Submit Answer`}
+                </Button>
               </div>
-              <Button
-                onClick={() => selectedAnswer && handleCommitAnswer()}
-                disabled={!selectedAnswer}
-                className="w-full"
-              >
-                {isCommittingAnswer
-                  ? `Committing to your private vault...`
-                  : `Submit Answer`}
-              </Button>
-              {/* <Button
-                onClick={handleNewQuestion}
-                variant="outline"
-                className="w-full"
-              >
-                Give me another random question
-              </Button> */}
-            </CardContent>
-          </Card>
-        </div>
-      )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
