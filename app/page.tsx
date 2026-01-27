@@ -67,7 +67,7 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex flex-col">
       <div className="flex-1 flex flex-col justify-center px-4 py-6 sm:py-8 lg:py-12">
-        <div className="container mx-auto h-full">
+        <div className="container mx-auto h-full max-w-6xl">
           <div className="text-center mb-6 sm:mb-8">
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-2 sm:mb-4">
               {process.env.NEXT_PUBLIC_APP_TITLE || "passkey-demo"}
