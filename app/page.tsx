@@ -3,17 +3,30 @@
 import { useState, useEffect } from "react";
 import { AuthForm } from "@/components/auth/auth-form";
 import { UserProfile } from "@/components/auth/user-profile";
+import { QuestionPreview } from "@/components/PrivateDataGame/QuestionPreview";
 import { AppUser } from "@/types/types";
 
 export default function Home() {
   const [user, setUser] = useState<AppUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [appVersion, setAppVersion] = useState<string>("");
 
   const [prfKek, setPrfKek] = useState<CryptoKey | null>(null);
 
   useEffect(() => {
     checkAuthStatus();
+    fetchVersion();
   }, []);
+
+  const fetchVersion = async () => {
+    try {
+      const response = await fetch("/api/version");
+      const data = await response.json();
+      setAppVersion(data.version || "");
+    } catch (error) {
+      console.error("Error fetching version:", error);
+    }
+  };
 
   const checkAuthStatus = async () => {
     try {
@@ -54,7 +67,7 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex flex-col">
       <div className="flex-1 flex flex-col justify-center px-4 py-6 sm:py-8 lg:py-12">
-        <div className="container mx-auto max-w-6xl">
+        <div className="container mx-auto h-full">
           <div className="text-center mb-6 sm:mb-8">
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-2 sm:mb-4">
               {process.env.NEXT_PUBLIC_APP_TITLE || "passkey-demo"}
@@ -77,20 +90,36 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="flex justify-center">
-            {user ? (
+          {user ? (
+            <div className="flex justify-center">
               <UserProfile
                 user={user}
                 prfKek={prfKek}
                 onLogout={handleLogout}
                 onSyncAuthStatusViaServer={checkAuthStatus}
               />
-            ) : (
-              <AuthForm onAuthSuccess={handleAuthSuccess} />
-            )}
-          </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 mx-auto  h-full">
+              <div className="flex justify-center md:justify-end">
+                <AuthForm onAuthSuccess={handleAuthSuccess} />
+              </div>
+              <div className="flex justify-center md:justify-start">
+                <div className="w-full max-w-xl h-full">
+                  <QuestionPreview />
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
+      <footer className="w-full py-2 px-4">
+        <div className="container mx-auto text-center">
+          {appVersion && (
+            <p className="text-[10px] text-gray-400">v{appVersion}</p>
+          )}
+        </div>
+      </footer>
     </main>
   );
 }

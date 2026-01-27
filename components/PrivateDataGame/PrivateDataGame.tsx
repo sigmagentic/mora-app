@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dialog";
 import { AnswerBit } from "@/lib/answer-commitments";
 import { getEpochId } from "@/lib/game-epoch";
+import { QuestionDisplay } from "./QuestionDisplay";
 
 let BYPASS_GAME_DEV_MODE = true;
 
@@ -84,6 +85,18 @@ export function PrivateDataGame({
     const interval = setInterval(updateTime, 1000);
     return () => clearInterval(interval);
   }, [lastPlayedDate]);
+
+
+  useEffect(() => {
+    if (!randomQuestion) {
+      window.scrollTo({
+        top: 0,
+        left: 0,
+        behavior: "smooth",
+      });
+    }
+  }, [randomQuestion]);
+
 
   const getRandomQuestion = async () => {
     try {
@@ -274,9 +287,9 @@ export function PrivateDataGame({
           }
         }}
       >
-        <DialogContent className="max-w-lg gap-4 sm:max-w-xl">
+        <DialogContent className="max-w-xl gap-4 scroll-smooth max-h-[90vh] overflow-y-auto">
           {randomQuestion && (
-            <div className="question-view-container space-y-4">
+            <>
               <DialogHeader>
                 <DialogTitle>Question</DialogTitle>
               </DialogHeader>
@@ -285,36 +298,12 @@ export function PrivateDataGame({
                   isCommittingAnswer ? "opacity-50 cursor-not-allowed" : ""
                 }`}
               >
-                <img src={randomQuestion.img} alt="Question" />
-                <p className="text-sm">{randomQuestion.text}</p>
-                <RadioGroup
-                  value={selectedAnswer?.id.toString() || ""}
-                  onValueChange={(value) =>
-                    setSelectedAnswer(
-                      randomQuestion.answers.find(
-                        (a) => a.id.toString() === value
-                      ) || null
-                    )
-                  }
-                >
-                  {randomQuestion.answers.map((answer) => (
-                    <div
-                      key={answer.id}
-                      className="flex items-center space-x-2 mt-2"
-                    >
-                      <RadioGroupItem
-                        value={answer.id.toString()}
-                        id={answer.id.toString()}
-                      />
-                      <label
-                        htmlFor={answer.id.toString()}
-                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                      >
-                        {answer.text}
-                      </label>
-                    </div>
-                  ))}
-                </RadioGroup>
+                <QuestionDisplay
+                  question={randomQuestion}
+                  selectedAnswer={selectedAnswer}
+                  onAnswerChange={(answer) => setSelectedAnswer(answer)}
+                  disabled={isCommittingAnswer}
+                />
 
                 <div className="p-2 sm:p-3 bg-gray-50 rounded-lg">
                   <p className="text-xs py-2">
@@ -342,7 +331,7 @@ export function PrivateDataGame({
                     : `Submit Answer`}
                 </Button>
               </div>
-            </div>
+            </>
           )}
         </DialogContent>
       </Dialog>

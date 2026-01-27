@@ -9,6 +9,8 @@ type Payload = {
   epoch_id: string;
   nullifier: string;
   commitment: string;
+  encrypted_answer: string;
+  tmp_answer_bit: number;
 };
 
 function isPayload(v: unknown): v is Payload {
@@ -22,7 +24,11 @@ function isPayload(v: unknown): v is Payload {
     "nullifier" in v &&
     typeof (v as Payload).nullifier === "string" &&
     "commitment" in v &&
-    typeof (v as Payload).commitment === "string"
+    typeof (v as Payload).commitment === "string" &&
+    "encrypted_answer" in v &&
+    typeof (v as Payload).encrypted_answer === "string" &&
+    "tmp_answer_bit" in v &&
+    typeof (v as Payload).tmp_answer_bit === "number"
   );
 }
 
@@ -44,7 +50,7 @@ export async function POST(request: NextRequest) {
     const payload = body.payload;
     if (!isPayload(payload)) {
       return NextResponse.json(
-        { error: "Invalid payload: requires question_id, epoch_id, nullifier, commitment" },
+        { error: "Invalid payload: requires question_id, epoch_id, nullifier, commitment, encrypted_answer, tmp_answer_bit" },
         { status: 400 }
       );
     }
@@ -56,6 +62,8 @@ export async function POST(request: NextRequest) {
         epoch_id: payload.epoch_id,
         nullifier: payload.nullifier,
         commitment: payload.commitment,
+        encrypted_answer: payload.encrypted_answer,
+        tmp_answer_bit: payload.tmp_answer_bit,
       })
       .select("id, submitted_at")
       .single();

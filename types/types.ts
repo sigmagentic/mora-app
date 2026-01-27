@@ -35,5 +35,9 @@ export interface GameQuestion {
   title?: string;
   img?: string;
   text: string;
+  opens_at: string;
+  closes_at: string;
+  game_status: string;
+  epoch_id: string;
   answers: GameQuestionAnswer[];
 }

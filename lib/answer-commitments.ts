@@ -174,3 +174,23 @@ export async function buildMoraResponsePayload(params: {
 }
 
 // E: final commitment payload generation
+
+
+// asnwer encryption for secure storage
+export async function encryptAnswerForSecureStorage(plaintext: ArrayBuffer, vmk: CryptoKey): Promise<{ciphertext: ArrayBuffer, iv: Uint8Array}> {
+  const iv = crypto.getRandomValues(new Uint8Array(12)); // 96-bit IV
+
+  const ciphertext = await crypto.subtle.encrypt(
+    {
+      name: "AES-GCM",
+      iv,
+    },
+    vmk,
+    plaintext
+  );
+
+  return {
+    ciphertext,
+    iv,
+  };
+}

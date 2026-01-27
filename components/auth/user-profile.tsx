@@ -24,7 +24,7 @@ import {
   GameQuestionAnswer,
 } from "@/types/types";
 import { PrivateDataGame } from "../PrivateDataGame/PrivateDataGame";
-import { buildMoraResponsePayload, deriveMoraIdentitySecret, AnswerBit } from "@/lib/answer-commitments";
+import { buildMoraResponsePayload, deriveMoraIdentitySecret, AnswerBit, encryptAnswerForSecureStorage } from "@/lib/answer-commitments";
 
 interface UserProfileProps {
   user: AppUser;
@@ -917,6 +917,7 @@ export function UserProfile({
   };
 
   const handleAnswerChallengeGenerationAndCommitment = async (questionId: number, epochId: string, answerBit: AnswerBit) : Promise<boolean> => {
+   debugger;
     if (!CACHED_VMK) {
       alert("VMK not available in memory.");
       return false;
@@ -931,15 +932,27 @@ export function UserProfile({
       answerBit,
     });
 
+    
+    
+    // create a encrypted_answer (in the final version most likely an archium key will be used to encrypt it)
+    const answerBitBuffer = new TextEncoder().encode(answerBit.toString());
+    const {ciphertext: encryptedAnswer, iv: encryptedAnswerIv} = await encryptAnswerForSecureStorage(answerBitBuffer.buffer, CACHED_VMK);
+
+
+    // note that the encryptedAnswer decoding etc is probabaly all wrong right now (just a placeholder)
+    const payloadToSave = {...payload, encrypted_answer: uint8ToBase64(new Uint8Array(encryptedAnswer)), encrypted_answer_iv: uint8ToBase64(encryptedAnswerIv), tmp_answer_bit: answerBit};
+  
+
     // commitment: send to backend
     // salt: keep client-side only (or encrypt later for Arcium or FHE if needed) // for now, just keep it in memory
 
-    // ok, payload we need to save this via a new POST method to a new API route /api/private-data-game/save-answer-commitment
+    // NOTE, this API will most likely be replaced with a Solana program in the future
+    // ... where we save in encrypted storage for Arcium to aggregate
     const res = await fetch("/api/private-data-game/save-answer-commitment", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify({ payload }),
+      body: JSON.stringify({ payload: payloadToSave }),
     });
 
     const body = await res.json();

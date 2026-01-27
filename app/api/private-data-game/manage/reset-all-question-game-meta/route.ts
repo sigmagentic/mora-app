@@ -10,8 +10,6 @@ export const runtime = "edge";
  * Requires x-api-key header matching MANAGE_API_KEY.
  */
 export async function POST(request: NextRequest) {
-  console.log("reset-all-question-game-meta route called");
-  
   const auth = validateManageApiKey(request);
   if (auth) return auth;
 
@@ -22,7 +20,7 @@ export async function POST(request: NextRequest) {
         epoch_id: null,
         opens_at: null,
         closes_at: null,
-        game_status: "DORMANT",
+        game_status: "UPCOMING",
       })
       .gte("id", 1)
       .select("id");
@@ -31,7 +29,7 @@ export async function POST(request: NextRequest) {
       console.error("reset-all-question-game-meta error:", error);
       return NextResponse.json(
         { error: "Failed to reset question game metadata" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -44,7 +42,7 @@ export async function POST(request: NextRequest) {
     console.error("reset-all-question-game-meta error:", err);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
