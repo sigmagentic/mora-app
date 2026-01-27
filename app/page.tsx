@@ -100,14 +100,12 @@ export default function Home() {
               />
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 mx-auto  h-full">
-              <div className="flex justify-center md:justify-end">
+            <div className="grid grid-cols-1 gap-6 ">
+              <div className="flex justify-center md:justify-end ">
                 <AuthForm onAuthSuccess={handleAuthSuccess} />
               </div>
-              <div className="flex justify-center md:justify-start">
-                <div className="w-full max-w-xl h-full">
-                  <QuestionPreview />
-                </div>
+              <div className="flex justify-center md:justify-end max-w-md mx-auto">
+                <QuestionPreview />
               </div>
             </div>
           )}
