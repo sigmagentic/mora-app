@@ -14,7 +14,7 @@ export default function Home() {
   const [prfKek, setPrfKek] = useState<CryptoKey | null>(null);
 
   useEffect(() => {
-    checkAuthStatus();
+    handleRefreshUserServerProfile();
     fetchVersion();
   }, []);
 
@@ -28,7 +28,7 @@ export default function Home() {
     }
   };
 
-  const checkAuthStatus = async () => {
+  const handleRefreshUserServerProfile = async () => {
     try {
       const response = await fetch("/api/auth/me");
       const data = await response.json();
@@ -103,7 +103,7 @@ export default function Home() {
                 user={user}
                 prfKek={prfKek}
                 onLogout={handleLogout}
-                onSyncAuthStatusViaServer={checkAuthStatus}
+                onRefreshUserServerProfile={handleRefreshUserServerProfile}
               />
             </div>
           ) : (

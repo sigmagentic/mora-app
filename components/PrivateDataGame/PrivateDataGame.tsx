@@ -25,12 +25,12 @@ interface PrivateDataGameProps {
   onAnswerSelection: (
     question: GameQuestion,
     answer: GameQuestionAnswer,
-    answerReasoning?: string,
+    answerReasoning?: string
   ) => Promise<boolean>;
   onAnswerCommitment: (
     questionId: number,
     epochId: string,
-    answerBit: AnswerBit,
+    answerBit: AnswerBit
   ) => Promise<boolean>;
 }
 
@@ -40,7 +40,7 @@ export function PrivateDataGame({
   onAnswerCommitment,
 }: PrivateDataGameProps) {
   const [randomQuestion, setRandomQuestion] = useState<GameQuestion | null>(
-    null,
+    null
   );
   const [selectedAnswer, setSelectedAnswer] =
     useState<GameQuestionAnswer | null>(null);
@@ -54,7 +54,7 @@ export function PrivateDataGame({
     return storedLog ? storedLog.split(",").map(Number) : [];
   });
   const [lastPlayedDate, setLastPlayedDate] = useState<string>(
-    () => localStorage.getItem("x-gameplay-played-last-ddmmyy") || "",
+    () => localStorage.getItem("x-gameplay-played-last-ddmmyy") || ""
   );
   const [fetchingActiveQuestion, setFetchingActiveQuestion] =
     useState<boolean>(false);
@@ -153,11 +153,11 @@ export function PrivateDataGame({
     // ideally we check local storage first, and THEN we check currentGameSecureNoteStorage
     console.log(
       "localstorage - ",
-      localStorage.getItem("x-gameplay-played-hr-log"),
+      localStorage.getItem("x-gameplay-played-hr-log")
     );
     console.log(
       "currentGameSecureNoteStorage - ",
-      currentGameSecureNoteStorage,
+      currentGameSecureNoteStorage
     );
 
     const localStoragePlayedLog =
@@ -168,7 +168,7 @@ export function PrivateDataGame({
     ) {
       toast.error(
         "Error",
-        "E1: You've already responded to this question during this game round/hour",
+        "E1: You've already responded to this question during this game round/hour"
       );
       return;
     }
@@ -203,7 +203,7 @@ export function PrivateDataGame({
       toast.error(
         "Error",
         "Unable to commit as no answer index was given, we received: " +
-          JSON.stringify(selectedAnswer),
+          JSON.stringify(selectedAnswer)
       );
       setIsCommittingAnswer(false);
       return;
@@ -212,7 +212,7 @@ export function PrivateDataGame({
     await onAnswerCommitment(
       randomQuestion!.id,
       _isActiveHHDDMMYY,
-      selectedAnswer.index as AnswerBit,
+      selectedAnswer.index as AnswerBit
     );
 
     await onAnswerSelection(randomQuestion!, selectedAnswer!, reasoning);
