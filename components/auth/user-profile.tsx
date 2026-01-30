@@ -30,6 +30,7 @@ import {
   ChevronUp,
   Power,
   KeyRound,
+  HelpCircle,
 } from "lucide-react";
 import { uint8ToBase64, base64ToUint8 } from "@/lib/utils";
 import { deriveKEK, isPRFSupported } from "@/lib/cryptography";
@@ -42,6 +43,7 @@ import {
 } from "@/types/types";
 import { PrivateDataGame } from "../PrivateDataGame/PrivateDataGame";
 import { PastResults } from "../PrivateDataGame/PastResults";
+import { AboutAppSlideshow } from "../AboutAppSlideshow";
 import {
   buildMoraResponsePayload,
   deriveMoraIdentitySecret,
@@ -60,6 +62,7 @@ interface UserProfileProps {
 let CACHED_VMK: CryptoKey | null = null;
 let BYPASS_VMK_UI_CHECKS = false;
 let BYPASS_HIDE_TABS = false;
+let INFO_SLIDESHOW_SHOWN_AUTOMATICALLY = false;
 
 export function UserProfile({
   user,
@@ -80,6 +83,7 @@ export function UserProfile({
   const [committingPrfSupportToServer, setCommittingPrfSupportToServer] =
     useState(false);
   const [profileCardExpanded, setProfileCardExpanded] = useState(false);
+  const [aboutAppSlideshowOpen, setAboutAppSlideshowOpen] = useState(false);
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -123,6 +127,23 @@ export function UserProfile({
   const [fetchingStoredFiles, setFetchingStoredFiles] = useState(false);
   const [inSecureGameMode, setInSecureGameMode] = useState(false);
 
+  // when the app has loaded and we have already fetched  the storaged file
+  // lets check if there is a localstorage item for x-info-slideshow-shown-on-ts
+  // if this does NOT exist OR if the ts is older than 7 days, lets show the slideshow
+  useEffect(() => {
+    const localStorageInfoSlideshowShownOnTs = localStorage.getItem(
+      "x-info-slideshow-shown-on-ts",
+    );
+    if (
+      !localStorageInfoSlideshowShownOnTs ||
+      new Date(localStorageInfoSlideshowShownOnTs).getTime() <
+        Date.now() - 7 * 24 * 60 * 60 * 1000
+    ) {
+      setAboutAppSlideshowOpen(true);
+      INFO_SLIDESHOW_SHOWN_AUTOMATICALLY = true;
+    }
+  }, []);
+
   useEffect(() => {
     fetchStoredFiles();
 
@@ -148,8 +169,6 @@ export function UserProfile({
   }, [previewUrl]);
 
   useEffect(() => {
-    // console.log("user profile updated:", user);
-
     async function checkAsyncThings() {
       if (!user.encryptedVmk || !user.kekSalt || !user.vmkIv) {
         setVaultMode("create");
@@ -1032,8 +1051,27 @@ export function UserProfile({
     return true;
   };
 
+  const launchAboutAppModalSlideshow = () => {
+    setAboutAppSlideshowOpen(true);
+  };
+
   return (
     <div className="w-full">
+      <AboutAppSlideshow
+        open={aboutAppSlideshowOpen}
+        onClose={() => {
+          debugger;
+          // IF it was shown automatically then we need to set the localstorage item
+          if (INFO_SLIDESHOW_SHOWN_AUTOMATICALLY) {
+            localStorage.setItem(
+              "x-info-slideshow-shown-on-ts",
+              new Date().toISOString(),
+            );
+          }
+
+          setAboutAppSlideshowOpen(false);
+        }}
+      />
       {vmkInMemory || BYPASS_VMK_UI_CHECKS ? (
         <div className="main-body-area w-full flex flex-col md:flex-row justify-around md:space-x-4 bg-white rounded-lg">
           <div className="bgx-red-500">
@@ -1055,6 +1093,15 @@ export function UserProfile({
                 <Button
                   size="icon"
                   variant="ghost"
+                  className="h-9 w-9 rounded-full shrink-0 text-gray-600 hover:bg-gray-50 hover:text-gray-700"
+                  onClick={launchAboutAppModalSlideshow}
+                  title="About the app"
+                >
+                  <HelpCircle className="h-4 w-4" />
+                </Button>
+                <Button
+                  size="icon"
+                  variant="ghost"
                   className="h-9 w-9 rounded-full shrink-0 text-red-600 hover:bg-red-50 hover:text-red-700"
                   onClick={handleLogout}
                   disabled={isLoggingOut}
@@ -1073,7 +1120,7 @@ export function UserProfile({
                     className="h-9 w-9 rounded-full shrink-0 text-gray-600 hover:bg-gray-50 hover:text-gray-700 animate-bounce"
                     onClick={handleCommitLazyPRFSupport}
                     disabled={committingPrfSupportToServer}
-                    title="Commit pure-biometrics encryption support"
+                    title="Your device supports pure-biometrics encryption. Commit support now?"
                   >
                     {committingPrfSupportToServer ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -1111,10 +1158,18 @@ export function UserProfile({
                 <CardContent className="space-y-3 sm:space-y-4 px-4 sm:px-6">
                   <div className="pt-3 sm:pt-4">
                     <Button
+                      onClick={launchAboutAppModalSlideshow}
+                      variant="outline"
+                      className="mb-2 w-full h-10 sm:h-11 border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 text-sm"
+                    >
+                      <span className="text-xs mr-2">?</span>
+                      About App
+                    </Button>
+                    <Button
                       onClick={handleLogout}
                       disabled={isLoggingOut}
                       variant="outline"
-                      className="w-full h-10 sm:h-11 border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 text-sm sm:text-base"
+                      className="w-full h-10 sm:h-11 border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 text-sm"
                     >
                       <span className="text-xs mr-2">$</span>
                       {isLoggingOut ? "logout..." : "logout"}
@@ -1162,7 +1217,7 @@ export function UserProfile({
                       <div className="flex flex-col">
                         <CardTitle className="text-sm">
                           <span className="text-lg sm:text-xl font-semibold">
-                            let's play a morality game{" "}
+                            Let's Play a Morality Game{" "}
                           </span>
                           <Popover>
                             <PopoverTrigger asChild>
@@ -1176,13 +1231,18 @@ export function UserProfile({
                               </button>
                             </PopoverTrigger>
                             <PopoverContent className="max-w-sm text-xs text-gray-700">
-                              We will play a morality game to collect highly
-                              valuable &quot;morality judgement&quot; data that
-                              measures your moral compass over time. All data
-                              collected is stored with zero-knowledge privacy
-                              guarantees. NO ONE can see your data! ONLY 24
-                              questions asked per day. A new one unlocked each
-                              UTC hour.
+                              We will play a simple question and answer based
+                              game to collect highly valuable &quot;morality
+                              judgement&quot; data that measures your moral
+                              compass over time. <br />
+                              <br />
+                              All data collected is stored with zero-knowledge
+                              privacy guarantees. NO ONE can see your data!{" "}
+                              <br />
+                              <br />
+                              ONLY 24 questions asked per day. A new one
+                              unlocked each UTC hour. Click on the "Live Now"
+                              tile below to answer the question.
                             </PopoverContent>
                           </Popover>
                         </CardTitle>
@@ -1194,16 +1254,16 @@ export function UserProfile({
                         {!fetchingStoredFiles &&
                           storedSecureNoteForPrivateGameFile === null &&
                           newSecureNoteSession === null && (
-                            <div className="flex flex-col items-center justify-between md:items-start">
+                            <div className="flex flex-col items-start">
                               <Button
                                 onClick={() => createNewSecureNote(true)}
                                 disabled={isUploading}
                                 variant="outline"
-                                className="h-10 sm:h-11 text-sm sm:text-base"
+                                className="h-10 text-sm"
                               >
                                 Create Private Data Vault to Start Game
                               </Button>
-                              <p className="text-[10px] md:text-sm mt-2 text-center w-[80%] md:text-left md:w-full">
+                              <p className="text-[10px] md:text-sm mt-2 text-left w-[90%] md:w-full">
                                 Click the button above to create a dedicated,
                                 private, secure, privacy-preserving,
                                 zero-knowledge data storage vault is used to
@@ -1454,7 +1514,7 @@ export function UserProfile({
                     <CardHeader>
                       <CardTitle>Predictions</CardTitle>
                       <CardDescription className="text-gray-600 text-xs min-h-[300px]">
-                        Want to place a bet how the masses respond to these
+                        Want to bet on how the masses will respond to these
                         morality questions? Private and verifiable prediction
                         markets coming soon...
                         <span className="text-2xl">👀</span>
@@ -1486,12 +1546,23 @@ export function UserProfile({
                         </button>
                       </PopoverTrigger>
                       <PopoverContent className="max-w-sm text-xs text-gray-700">
-                        You need a master vault password that will help you
-                        recover your vault if your biometrics encryption fails
-                        on this device OR if you need to access or backup your
-                        vault on another device. It&apos;s critical you pick
-                        something strong and secure for this password and make
-                        sure you back it up offline for safety!
+                        All data is encrypted end-to-end using your
+                        device-bound, biometrics-powered, quantum-resistant
+                        encryption. This data is stored in a 'Vault'. <br />
+                        <br />
+                        You will still need a master vault password that will
+                        help you recover your vault if your biometrics
+                        encryption fails on this device OR if you need to access
+                        or backup your vault on another device. <br />
+                        <br />
+                        It&apos;s critical you pick something strong and secure
+                        for this password and make sure you back it up offline
+                        for safety!
+                        <br />
+                        <br />
+                        Note that we CANNOT recover or reset your vault password
+                        for you. If you forget it, you will need to create a new
+                        vault and all your past data will be lost.
                       </PopoverContent>
                     </Popover>
                   </CardDescription>

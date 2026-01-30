@@ -7,10 +7,10 @@ import { createToken } from "@/lib/auth-utils";
 export const runtime = "edge";
 
 export async function POST(request: NextRequest) {
-  console.log("Login Complete Route Hit!");
+  // console.log("Login Complete Route Hit!");
   try {
     const requestBody = await request.json();
-    console.log("Login Complete Request Body:", requestBody);
+    // console.log("Login Complete Request Body:", requestBody);
     const { credential, expectedChallenge } = requestBody;
 
     if (!credential || !expectedChallenge) {
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
 
     // Find the credential in database
     const credentialId = credential.rawId;
-    console.log("Attempting to find credential with ID:", credentialId);
+    // console.log("Attempting to find credential with ID:", credentialId);
 
     const { data: storedCredential, error: credError } = await supabase
       .from("user_credentials")
@@ -45,8 +45,8 @@ export async function POST(request: NextRequest) {
       .eq("credential_id", credentialId)
       .single();
 
-    console.log("Supabase query result - storedCredential:", storedCredential);
-    console.log("Supabase query result - credError:", credError);
+    // console.log("Supabase query result - storedCredential:", storedCredential);
+    // console.log("Supabase query result - credError:", credError);
 
     if (credError || !storedCredential) {
       console.error("Credential not found error:", credError);
@@ -76,8 +76,8 @@ export async function POST(request: NextRequest) {
       );
       const credentialOrigin = clientDataJSON.origin;
 
-      console.log("Credential origin from clientDataJSON:", credentialOrigin);
-      console.log("Default expected origin:", origin);
+      // console.log("Credential origin from clientDataJSON:", credentialOrigin);
+      // console.log("Default expected origin:", origin);
 
       // Validate that the origin is a subdomain of the RP ID
       if (credentialOrigin) {
@@ -88,10 +88,10 @@ export async function POST(request: NextRequest) {
           // Accept if origin is exactly the RP ID or a subdomain of RP ID
           if (originHost === rpID || originHost.endsWith(`.${rpID}`)) {
             actualOrigin = credentialOrigin;
-            console.log(
-              "Using credential origin for verification:",
-              actualOrigin,
-            );
+            // console.log(
+            //   "Using credential origin for verification:",
+            //   actualOrigin,
+            // );
           } else {
             console.error(
               "Invalid origin - not a subdomain of RP ID:",
@@ -138,10 +138,10 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    console.log(
-      "Full authentication verification object:",
-      JSON.stringify(verification, null, 2),
-    );
+    // console.log(
+    //   "Full authentication verification object:",
+    //   JSON.stringify(verification, null, 2),
+    // );
 
     // Update counter
     await supabase

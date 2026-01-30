@@ -275,12 +275,14 @@ export function PrivateDataGame({
                 </div>
               )}
               {isActive && (
-                <div className="text-xs text-black">
+                <div className="text-[9px] md:text-xs text-black">
                   {isPlayed ? "Live & Played!" : "Live Now!"}
                 </div>
               )}
               {isNext && (
-                <div className="text-xs text-green-500">{countdown}</div>
+                <div className="text-[9px] md:text-xs text-green-500">
+                  {countdown}
+                </div>
               )}
               {fetchingActiveQuestion && isActive && (
                 <div className="flex flex-row justify-center mt-2">

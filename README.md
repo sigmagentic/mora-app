@@ -1,6 +1,6 @@
-# 🔐 Mora App
+# 🔐 MORA App
 
-**Mora exists to capture human values the world cannot see — without ever revealing the people behind them.**
+**MORA exists to capture human values the world cannot see — without ever revealing the people behind them.**
 
 AI already owns almost all human data — behavior, language, preferences, and soon, even synthetic reasoning.
 
@@ -14,6 +14,7 @@ When they’re permanent, people perform.
 We are building a zero-knowledge system that captures how humans actually resolve moral dilemmas, without revealing who they are or what they chose.
 
 This creates a new class of data:
+
 - Non-synthetic
 - Non-performative
 - Non-attributable

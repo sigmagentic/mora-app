@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
 
     // Generate authentication options
     const options: any = await generateAuthenticationOptions(
-      generateAuthenticationOptionsConfig(allowCredentials)
+      generateAuthenticationOptionsConfig(allowCredentials),
     );
 
     // const prfSalt = randomBytes(32);
@@ -62,12 +62,12 @@ export async function POST(request: NextRequest) {
 
       // but thsi work fine for bext UX and there are no security tradeoffs as the KEK will be (user_passkey_private_key, prf_salt) so it's always safe
       const prfSaltBase64URL = isoBase64URL.fromBuffer(
-        new TextEncoder().encode("vault-kek-v1")
+        new TextEncoder().encode("vault-kek-v1"),
       );
 
       authOptions.prfSaltBase64URL = prfSaltBase64URL;
 
-      console.log(">>> Generated PRF salt (base64url):", prfSaltBase64URL);
+      // console.log(">>> Generated PRF salt (base64url):", prfSaltBase64URL);
     }
 
     return NextResponse.json(authOptions);
@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
     console.error("Login begin error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

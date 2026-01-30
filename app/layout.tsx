@@ -9,10 +9,10 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: process.env.NEXT_PUBLIC_SITE_TITLE || "Mora",
+  title: process.env.NEXT_PUBLIC_SITE_TITLE || "MORA",
   description:
     process.env.NEXT_PUBLIC_SITE_DESCRIPTION ||
-    "Mora exists to capture human values the world cannot see — without ever revealing the people behind them.",
+    "MORA exists to capture human values the world cannot see — without ever revealing the people behind them.",
   icons: {
     icon: [
       // { url: '/favicon.ico' },

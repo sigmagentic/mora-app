@@ -73,7 +73,7 @@ export default function Home() {
               <div className="flex justify-center bg-white rounded-full p-[10px] w-fit mx-auto overflow-hidden">
                 <Image
                   src="/mora-cat-logo.png"
-                  alt="Mora Cat Logo"
+                  alt="MORA Cat Logo"
                   width={60}
                   height={20}
                   className=""
@@ -112,7 +112,7 @@ export default function Home() {
                 <div className="flex justify-center bg-white rounded-full p-[10px] w-fit mx-auto overflow-hidden">
                   <Image
                     src="/mora-cat-logo.png"
-                    alt="Mora Cat Logo"
+                    alt="MORA Cat Logo"
                     width={120}
                     height={40}
                     className=""
