@@ -156,6 +156,15 @@ export async function POST(request: NextRequest) {
       username: user.username,
     });
 
+    // Get total XP via RPC (SUM in DB; scales to any number of rows)
+    const { data: xpResult } = await supabase.rpc("get_user_total_xp", {
+      p_user_id: user.id,
+    });
+    const totalXp =
+      Array.isArray(xpResult) && xpResult[0]?.total_xp != null
+        ? Number(xpResult[0].total_xp)
+        : 0;
+
     const response = NextResponse.json({
       success: true,
       token: token, // Include token in response for client-side storage
@@ -169,6 +178,7 @@ export async function POST(request: NextRequest) {
         vmkIv: user.vmk_iv,
         prfEncryptedVmk: user.prf_encrypted_vmk,
         prfVmkIv: user.prf_vmk_iv,
+        totalXp,
       },
     });
 

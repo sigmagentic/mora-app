@@ -10,6 +10,7 @@ export interface AppUser {
   encryptedVmk?: string;
   prfVmkIv?: string;
   prfEncryptedVmk?: string;
+  totalXp?: number;
 }
 
 export interface StorageFile {

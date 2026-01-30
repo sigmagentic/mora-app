@@ -231,9 +231,13 @@ export function AuthForm({ onAuthSuccess }: AuthFormProps) {
         let prfResult = null;
 
         try {
-          prfResult = (credential as any)?.getClientExtensionResults()?.prf?.results?.first;
+          prfResult = (credential as any)?.getClientExtensionResults()?.prf
+            ?.results?.first;
         } catch (error) {
-          console.error("Error obtaining PRF result from authenticator:", error);
+          console.error(
+            "Error obtaining PRF result from authenticator:",
+            error,
+          );
           prfResult = null;
         }
 
@@ -341,7 +345,7 @@ export function AuthForm({ onAuthSuccess }: AuthFormProps) {
                   />
                 </div>
 
-                <div className="space-y-1 sm:space-y-2">
+                {/* <div className="space-y-1 sm:space-y-2">
                   <Label
                     htmlFor="register-email"
                     className="text-xs sm:text-sm font-medium text-gray-700"
@@ -356,9 +360,9 @@ export function AuthForm({ onAuthSuccess }: AuthFormProps) {
                     placeholder="user@example.com"
                     className="h-10 sm:h-11 text-sm sm:text-base"
                   />
-                </div>
+                </div> */}
 
-                <div className="space-y-1 sm:space-y-2">
+                {/* <div className="space-y-1 sm:space-y-2">
                   <Label
                     htmlFor="register-displayName"
                     className="text-xs sm:text-sm font-medium text-gray-700"
@@ -374,7 +378,7 @@ export function AuthForm({ onAuthSuccess }: AuthFormProps) {
                     placeholder="Your Name"
                     className="h-10 sm:h-11 text-sm sm:text-base"
                   />
-                </div>
+                </div> */}
 
                 {/* Cap CAPTCHA Widget - Only show if CAPTCHA is enabled */}
                 {isCaptchaEnabled && (
@@ -499,7 +503,7 @@ export function AuthForm({ onAuthSuccess }: AuthFormProps) {
           </Tabs>
 
           <div className="mt-4 sm:mt-6 text-center px-2">
-            <p className="text-xs text-gray-500 leading-tight">
+            <p className="text-[10px] text-gray-500 leading-tight">
               Uses device biometrics: Face ID | Touch ID | Windows Hello
             </p>
           </div>

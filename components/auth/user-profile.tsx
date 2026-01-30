@@ -14,13 +14,18 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
   User,
   Trash2,
   Download,
   Edit,
   Loader2,
-  ChevronDown,
-  ChevronUp,
+  ChevronRight,
+  ChevronLeft,
   Power,
   KeyRound,
 } from "lucide-react";
@@ -87,15 +92,6 @@ export function UserProfile({
     } finally {
       setIsLoggingOut(false);
     }
-  };
-
-  const getInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
   };
 
   const [selectedPrivateFile, setSelectedPrivateFile] = useState<File | null>(
@@ -969,6 +965,7 @@ export function UserProfile({
       encrypted_answer: uint8ToBase64(new Uint8Array(encryptedAnswer)),
       encrypted_answer_iv: uint8ToBase64(encryptedAnswerIv),
       tmp_answer_bit: answerBit,
+      tmp_user_id: user.id, // only used for XP tracking
     };
 
     // commitment: send to backend
@@ -1000,10 +997,9 @@ export function UserProfile({
   return (
     <div className="w-full">
       {vmkInMemory || BYPASS_VMK_UI_CHECKS ? (
-        <div className="w-full flex flex-row justify-around space-x-4">
+        <div className="w-full flex flex-row justify-around space-x-4 bg-white rounded-lg">
           {!profileCardExpanded ? (
-            /* Minimized view: small circle icon buttons */
-            <div className="profile-card mt-4 flex flex-col items-center justify-top gap-2 p-2 pt-5 border-0 shadow-2xl bg-white/95 backdrop-blur-sm rounded-full w-fit">
+            <div className="profile-card-minimized mt-4 flex flex-col items-center justify-top gap-2 p-2 pt-5 border-0 w-fit">
               <Button
                 size="icon"
                 variant="ghost"
@@ -1011,8 +1007,11 @@ export function UserProfile({
                 onClick={() => setProfileCardExpanded(true)}
                 title="Expand profile"
               >
-                <ChevronDown className="h-4 w-4" />
+                <ChevronRight className="h-4 w-4" />
               </Button>
+              <p className="text-xs text-gray-500 font-normal leading-relaxed">
+                {user?.totalXp || 0} XP
+              </p>
               <Button
                 size="icon"
                 variant="ghost"
@@ -1045,7 +1044,7 @@ export function UserProfile({
               )}
             </div>
           ) : (
-            <Card className="profile-card mt-4 border-0 shadow-2xl bg-white/95 backdrop-blur-sm w-full max-w-sm">
+            <Card className="profile-card-expanded mt-4 border-0 bg-white w-full max-w-sm">
               <CardHeader className="text-center pb-4 px-4 sm:px-6 relative">
                 <Button
                   size="icon"
@@ -1054,117 +1053,22 @@ export function UserProfile({
                   onClick={() => setProfileCardExpanded(false)}
                   title="Minimize profile"
                 >
-                  <ChevronUp className="h-4 w-4" />
+                  <ChevronLeft className="h-4 w-4" />
                 </Button>
                 <div className="flex flex-col items-center space-y-3 sm:space-y-4">
-                  <Avatar className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-blue-500 to-purple-600">
-                    <AvatarFallback className="text-white text-lg sm:text-xl font-bold">
-                      {getInitials(user.displayName || user.username)}
-                    </AvatarFallback>
-                  </Avatar>
                   <div>
                     <CardTitle className="text-xl sm:text-2xl font-bold text-gray-900">
                       <span className="text-blue-600">{">"}</span>{" "}
-                      {user.displayName || user.username}
+                      {user.username}
                     </CardTitle>
-                    {user.displayName && (
-                      <CardDescription className="text-gray-600">
-                        @{user.username}
-                      </CardDescription>
-                    )}
                   </div>
-                  <Badge
-                    variant="secondary"
-                    className="bg-green-100 text-green-800 border-green-200 text-xs sm:text-sm"
-                  >
-                    <span className="text-xs mr-1">✓</span>
-                    authenticated
-                  </Badge>
+                  <p className="text-lg text-gray-500 font-normal leading-relaxed">
+                    {user?.totalXp || 0} XP
+                  </p>
                 </div>
               </CardHeader>
 
               <CardContent className="space-y-3 sm:space-y-4 px-4 sm:px-6">
-                <div className="space-y-2 sm:space-y-3">
-                  <div className="flex items-center space-x-3 p-2 sm:p-3 bg-gray-50 rounded-lg">
-                    <span className="text-gray-500 text-xs sm:text-sm">$</span>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs sm:text-sm font-medium text-gray-700">
-                        username:
-                      </p>
-                      <p className="text-xs sm:text-sm text-gray-600 truncate">
-                        {user.username}
-                      </p>
-                    </div>
-                  </div>
-
-                  {user.email && (
-                    <div className="flex items-center space-x-3 p-2 sm:p-3 bg-gray-50 rounded-lg">
-                      <span className="text-gray-500 text-xs sm:text-sm">
-                        @
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-xs sm:text-sm font-medium text-gray-700">
-                          email:
-                        </p>
-                        <p className="text-xs sm:text-sm text-gray-600 truncate">
-                          {user.email}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  {isDevicePRFSupported && (
-                    <div className="flex items-center space-x-3 p-2 sm:p-3 bg-gray-50 rounded-lg">
-                      <span className="text-gray-500 text-xs sm:text-sm">
-                        ^
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-xs sm:text-xs font-medium text-gray-700">
-                          Biometrics-Powered Data Encryption:
-                        </p>
-                        <p className="text-xs sm:text-sm text-green-600 font-medium">
-                          {prfKek ? (
-                            <>
-                              <span className="text-green-600 text-[10px]">
-                                ✓ Biometrics vault key generated{" "}
-                                {user.prfEncryptedVmk && " and committed!"}
-                              </span>
-
-                              {!user.prfEncryptedVmk && (
-                                <div className="pt-2">
-                                  <Button
-                                    disabled={committingPrfSupportToServer}
-                                    onClick={handleCommitLazyPRFSupport}
-                                    variant="outline"
-                                    className="text-[10px]"
-                                  >
-                                    {committingPrfSupportToServer
-                                      ? "Committing ..."
-                                      : "Commit pure-biometrics encryption support"}
-                                  </Button>
-                                </div>
-                              )}
-                            </>
-                          ) : (
-                            <span className="text-red-600 text-[10px]">
-                              ✗ Biometrics vault key not yet generated. But your
-                              data is still fully encrypted with zero-knowledge
-                              privacy using your password, which you will need
-                              to enter each time you login. Once a
-                              Pure-Biometrics key is added to your account, you
-                              dont need to use your password each time to access
-                              your data! This key will be generated on your next
-                              login{" "}
-                              {user.prfEncryptedVmk &&
-                                " but committed in the past session!"}
-                            </span>
-                          )}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
                 <div className="pt-3 sm:pt-4 border-t">
                   <Button
                     onClick={handleLogout}
@@ -1180,7 +1084,7 @@ export function UserProfile({
             </Card>
           )}
 
-          <Card className="content-card mt-4 border-0 shadow-2xl bg-white/95 backdrop-blur-sm w-full">
+          <Card className="content-card mt-4 border-0 shadow-2xl backdrop-blur-sm w-full">
             <CardContent className="px-4 sm:px-6">
               <Tabs defaultValue="privacy-data-game" className="w-full mt-2">
                 <TabsList
@@ -1212,7 +1116,7 @@ export function UserProfile({
                 </TabsList>
                 {/* Private Data Game */}
                 <TabsContent value="privacy-data-game">
-                  <Card className="mt-4 border-none">
+                  <Card className="mt-4">
                     <CardHeader className="px-4 sm:px-6">
                       <div className="flex flex-col">
                         <CardTitle className="text-lg sm:text-xl font-semibold">
@@ -1220,12 +1124,11 @@ export function UserProfile({
                         </CardTitle>
                         <CardDescription className="text-gray-600 text-xs">
                           ... to collect highly valuable &quot;human
-                          morality&quot; data on a longitudinal basic, to
-                          measure your moral compass over time. All data
-                          collected is stored with zero-knowledge privacy
-                          guarantees. NO ONE can see your data! ONLY 24
-                          questions asked per day. A new one unlocked each UTC
-                          hour.
+                          morality&quot; data that measures your moral compass
+                          over time. All data collected is stored with
+                          zero-knowledge privacy guarantees. NO ONE can see your
+                          data! ONLY 24 questions asked per day. A new one
+                          unlocked each UTC hour.
                         </CardDescription>
                       </div>
                     </CardHeader>
@@ -1267,203 +1170,210 @@ export function UserProfile({
                                 }
                               />
                             </div>
-                            <div className="p-2 sm:p-3 bg-gray-50 rounded-lg">
-                              <Textarea
-                                id="private-game-secure-note-textarea"
-                                value={newSecureNoteSession}
-                                onChange={(e) =>
-                                  setNewSecureNoteSession(e.target.value)
-                                }
-                                required
-                                disabled={isUploading}
-                                placeholder="Enter secure note here..."
-                                className="h-10 sm:h-11 text-xs"
-                              />
-                            </div>
-
-                            <div>
-                              <Input
-                                id="secure-note-filename"
-                                type="text"
-                                value={newSecureNoteFileLabel || ""}
-                                placeholder="Enter a label for this note (e.g. Financial Notes 2024)"
-                                disabled
-                                className="h-10 sm:h-11 text-sm"
-                              />
-                            </div>
-
-                            <div className="pt-2 flex space-x-2">
-                              <Button
-                                onClick={() => {
-                                  if (
-                                    confirm(
-                                      `Are you sure you want to abort ${
-                                        secureNoteEditModeFile
-                                          ? "editing"
-                                          : "creating"
-                                      } this note?`,
-                                    ) == true
-                                  ) {
-                                    setNewSecureNoteSession(null);
-                                    setNewSecureNoteFileLabel(null);
-                                    setSecureNoteEditModeFile(null);
+                            <div className="bg-red-500 hidden">
+                              <div className="p-2 sm:p-3 bg-gray-50 rounded-lg">
+                                <Textarea
+                                  id="private-game-secure-note-textarea"
+                                  value={newSecureNoteSession}
+                                  onChange={(e) =>
+                                    setNewSecureNoteSession(e.target.value)
                                   }
-                                }}
-                                disabled={isUploading}
-                                variant="outline"
-                                className={`w-full h-10 sm:h-11 text-sm sm:text-base ${
-                                  isUploading
-                                    ? "opacity-50 cursor-not-allowed"
-                                    : ""
-                                }`}
-                              >
-                                Cancel
-                              </Button>
-                              <Button
-                                onClick={() => {
-                                  encryptAndUpload(true);
-                                }}
-                                disabled={isUploading}
-                                variant="outline"
-                                className={`w-full h-10 sm:h-11 text-sm sm:text-base border-green-200 text-green-600 hover:bg-green-50 hover:border-green-300 ${
-                                  isUploading
-                                    ? "opacity-50 cursor-not-allowed"
-                                    : ""
-                                }`}
-                              >
-                                {isUploading
-                                  ? "Encrypting..."
-                                  : "Encrypt and Save"}
-                              </Button>
+                                  required
+                                  disabled={isUploading}
+                                  placeholder="Enter secure note here..."
+                                  className="h-10 sm:h-11 text-xs"
+                                />
+                              </div>
+
+                              <div>
+                                <Input
+                                  id="secure-note-filename"
+                                  type="text"
+                                  value={newSecureNoteFileLabel || ""}
+                                  placeholder="Enter a label for this note (e.g. Financial Notes 2024)"
+                                  disabled
+                                  className="h-10 sm:h-11 text-sm"
+                                />
+                              </div>
+
+                              <div className="pt-2 flex space-x-2">
+                                <Button
+                                  onClick={() => {
+                                    if (
+                                      confirm(
+                                        `Are you sure you want to abort ${
+                                          secureNoteEditModeFile
+                                            ? "editing"
+                                            : "creating"
+                                        } this note?`,
+                                      ) == true
+                                    ) {
+                                      setNewSecureNoteSession(null);
+                                      setNewSecureNoteFileLabel(null);
+                                      setSecureNoteEditModeFile(null);
+                                    }
+                                  }}
+                                  disabled={isUploading}
+                                  variant="outline"
+                                  className={`w-full h-10 sm:h-11 text-sm sm:text-base ${
+                                    isUploading
+                                      ? "opacity-50 cursor-not-allowed"
+                                      : ""
+                                  }`}
+                                >
+                                  Cancel
+                                </Button>
+                                <Button
+                                  onClick={() => {
+                                    encryptAndUpload(true);
+                                  }}
+                                  disabled={isUploading}
+                                  variant="outline"
+                                  className={`w-full h-10 sm:h-11 text-sm sm:text-base border-green-200 text-green-600 hover:bg-green-50 hover:border-green-300 ${
+                                    isUploading
+                                      ? "opacity-50 cursor-not-allowed"
+                                      : ""
+                                  }`}
+                                >
+                                  {isUploading
+                                    ? "Encrypting..."
+                                    : "Encrypt and Save"}
+                                </Button>
+                              </div>
+
+                              <div>
+                                <p>Testing commitment generation...</p>
+                                <Input
+                                  type="text"
+                                  placeholder="question_id:X,epochId:Y,answerBit:Z"
+                                  className="h-10 sm:h-11 text-sm"
+                                  value={commitmentTestInput}
+                                  onChange={(e) =>
+                                    setCommitmentTestInput(
+                                      e.target.value as string,
+                                    )
+                                  }
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter") {
+                                      test_handleAnswerChallengeGeneration(
+                                        commitmentTestInput,
+                                      );
+                                    }
+                                  }}
+                                />
+                              </div>
+
+                              <div>
+                                {fetchingStoredFiles && (
+                                  <div className="flex flex-col items-center space-x-2">
+                                    <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 mr-2 animate-spin" />
+                                    <span className="text-xs">
+                                      Loading stored files...
+                                    </span>
+                                  </div>
+                                )}
+                                {storedSecureNoteForPrivateGameFile && (
+                                  <div className="pt-4 border-t">
+                                    <div className="space-y-2">
+                                      <div
+                                        key={
+                                          storedSecureNoteForPrivateGameFile.id
+                                        }
+                                        className="flex items-center space-x-3 p-2 sm:p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
+                                      >
+                                        <div className="min-w-0 flex-1">
+                                          <p className="text-xs font-medium text-gray-500 truncate">
+                                            {
+                                              storedSecureNoteForPrivateGameFile
+                                                ?.metadata?.fileLabel
+                                            }
+                                          </p>
+                                          <p className="text-[10px] font-medium text-gray-900 truncate">
+                                            {
+                                              storedSecureNoteForPrivateGameFile
+                                                ?.metadata?.filename
+                                            }
+                                          </p>
+                                          <div className="flex items-center space-x-2 text-xs text-gray-500">
+                                            <span>
+                                              {
+                                                storedSecureNoteForPrivateGameFile.size
+                                              }
+                                            </span>
+                                            <span>•</span>
+                                            <span>
+                                              {
+                                                storedSecureNoteForPrivateGameFile.created_at
+                                              }
+                                            </span>
+                                          </div>
+                                        </div>
+
+                                        <button
+                                          onClick={() =>
+                                            handleDeleteFile(
+                                              storedSecureNoteForPrivateGameFile.id,
+                                              storedSecureNoteForPrivateGameFile
+                                                ?.metadata?.filename,
+                                            )
+                                          }
+                                          className="flex-shrink-0 p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition"
+                                          title="Delete file"
+                                        >
+                                          <Trash2 className="w-4 h-4" />
+                                        </button>
+                                        <button
+                                          onClick={() =>
+                                            decryptAndDownloadFile(
+                                              storedSecureNoteForPrivateGameFile,
+                                            )
+                                          }
+                                          className="flex-shrink-0 p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition"
+                                          title="Decrypt & Download file"
+                                        >
+                                          <Download className="w-4 h-4" />
+                                        </button>
+                                        <button
+                                          onClick={() => {
+                                            setInSecureGameMode(true);
+                                            decryptAndLoadFileToEdit(
+                                              storedSecureNoteForPrivateGameFile,
+                                            );
+                                          }}
+                                          className={`flex-shrink-0 p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition ${
+                                            isUploading ||
+                                            newSecureNoteSession !== null
+                                              ? "opacity-50 cursor-not-allowed"
+                                              : ""
+                                          }`}
+                                          title="Edit Note"
+                                          disabled={
+                                            isUploading ||
+                                            newSecureNoteSession !== null
+                                          }
+                                        >
+                                          <Edit className="w-4 h-4" />
+                                        </button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           </>
                         )}
-
-                        <div>
-                          <p>Testing commitment generation...</p>
-                          <Input
-                            type="text"
-                            placeholder="question_id:X,epochId:Y,answerBit:Z"
-                            className="h-10 sm:h-11 text-sm"
-                            value={commitmentTestInput}
-                            onChange={(e) =>
-                              setCommitmentTestInput(e.target.value as string)
-                            }
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") {
-                                test_handleAnswerChallengeGeneration(
-                                  commitmentTestInput,
-                                );
-                              }
-                            }}
-                          />
-                        </div>
-
-                        <div>
-                          {fetchingStoredFiles && (
-                            <div className="flex flex-col items-center space-x-2">
-                              <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 mr-2 animate-spin" />
-                              <span className="text-xs">
-                                Loading stored files...
-                              </span>
-                            </div>
-                          )}
-                          {storedSecureNoteForPrivateGameFile && (
-                            <div className="pt-4 border-t">
-                              <div className="space-y-2">
-                                <div
-                                  key={storedSecureNoteForPrivateGameFile.id}
-                                  className="flex items-center space-x-3 p-2 sm:p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
-                                >
-                                  <div className="min-w-0 flex-1">
-                                    <p className="text-xs font-medium text-gray-500 truncate">
-                                      {
-                                        storedSecureNoteForPrivateGameFile
-                                          ?.metadata?.fileLabel
-                                      }
-                                    </p>
-                                    <p className="text-[10px] font-medium text-gray-900 truncate">
-                                      {
-                                        storedSecureNoteForPrivateGameFile
-                                          ?.metadata?.filename
-                                      }
-                                    </p>
-                                    <div className="flex items-center space-x-2 text-xs text-gray-500">
-                                      <span>
-                                        {
-                                          storedSecureNoteForPrivateGameFile.size
-                                        }
-                                      </span>
-                                      <span>•</span>
-                                      <span>
-                                        {
-                                          storedSecureNoteForPrivateGameFile.created_at
-                                        }
-                                      </span>
-                                    </div>
-                                  </div>
-
-                                  <button
-                                    onClick={() =>
-                                      handleDeleteFile(
-                                        storedSecureNoteForPrivateGameFile.id,
-                                        storedSecureNoteForPrivateGameFile
-                                          ?.metadata?.filename,
-                                      )
-                                    }
-                                    className="flex-shrink-0 p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition"
-                                    title="Delete file"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </button>
-                                  <button
-                                    onClick={() =>
-                                      decryptAndDownloadFile(
-                                        storedSecureNoteForPrivateGameFile,
-                                      )
-                                    }
-                                    className="flex-shrink-0 p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition"
-                                    title="Decrypt & Download file"
-                                  >
-                                    <Download className="w-4 h-4" />
-                                  </button>
-                                  <button
-                                    onClick={() => {
-                                      setInSecureGameMode(true);
-                                      decryptAndLoadFileToEdit(
-                                        storedSecureNoteForPrivateGameFile,
-                                      );
-                                    }}
-                                    className={`flex-shrink-0 p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition ${
-                                      isUploading ||
-                                      newSecureNoteSession !== null
-                                        ? "opacity-50 cursor-not-allowed"
-                                        : ""
-                                    }`}
-                                    title="Edit Note"
-                                    disabled={
-                                      isUploading ||
-                                      newSecureNoteSession !== null
-                                    }
-                                  >
-                                    <Edit className="w-4 h-4" />
-                                  </button>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                        </div>
                       </div>
                     </CardContent>
                   </Card>
                 </TabsContent>
 
                 <TabsContent value="past-results">
-                  <Card className="mt-4 border-none">
+                  <Card className="mt-4">
                     <CardHeader>
                       <CardTitle>Past Results</CardTitle>
                       <CardDescription className="text-gray-600 text-xs">
-                        Aggregated results from past questions (no individual answers are revealed).
+                        Aggregated results from past questions (no individual
+                        answers or identities are ever stored or revealed).
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -1473,12 +1383,16 @@ export function UserProfile({
                 </TabsContent>
 
                 <TabsContent value="predictions">
-                  <Card className="mt-4 border-none">
+                  <Card className="mt-4">
                     <CardHeader>
-                      {" "}
-                      <CardTitle>Predictions</CardTitle>{" "}
+                      <CardTitle>Predictions</CardTitle>
+                      <CardDescription className="text-gray-600 text-xs min-h-[300px]">
+                        Want to place a bet how the masses respond to these
+                        morality questions? Private and verifiable prediction
+                        markets coming soon...
+                        <span className="text-2xl">👀</span>
+                      </CardDescription>
                     </CardHeader>
-                    <CardContent>Coming soon...</CardContent>
                   </Card>
                 </TabsContent>
               </Tabs>
@@ -1487,7 +1401,7 @@ export function UserProfile({
         </div>
       ) : (
         <div className="w-full max-w-md mx-auto px-4 sm:px-0">
-          <Card className="mt-4 border-0 shadow-2xl bg-white/95 backdrop-blur-sm">
+          <Card className="mt-4 border-0 shadow-2xl backdrop-blur-sm">
             <CardHeader className="px-4 sm:px-6">
               <div className="flex flex-col">
                 <CardTitle className="text-xl sm:text-2xl font-bold text-gray-900">
@@ -1496,12 +1410,24 @@ export function UserProfile({
                 </CardTitle>
                 {vaultMode === "create" && (
                   <CardDescription className="text-gray-600 text-[10px]">
-                    ⚠️ You need a master vault password that will help you
-                    recover your vault if your biometrics encryption fails on
-                    this device OR if you need to access or backup your vault on
-                    another device. It&apos;s critical you pick somethign strong
-                    and secure for this password and make sure you back it up
-                    offline for safety!
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <button
+                          type="button"
+                          className="underline decoration-dotted cursor-help"
+                        >
+                          ⚠️ What?
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent className="max-w-sm text-xs text-gray-700">
+                        You need a master vault password that will help you
+                        recover your vault if your biometrics encryption fails
+                        on this device OR if you need to access or backup your
+                        vault on another device. It&apos;s critical you pick
+                        something strong and secure for this password and make
+                        sure you back it up offline for safety!
+                      </PopoverContent>
+                    </Popover>
                   </CardDescription>
                 )}
               </div>
@@ -1571,6 +1497,7 @@ export function UserProfile({
                   </div>
                 </div>
               )}
+
               <div className="pt-3 sm:pt-4 border-t">
                 <Button
                   onClick={handleLogout}
