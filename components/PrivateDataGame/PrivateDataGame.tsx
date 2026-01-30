@@ -16,6 +16,7 @@ import {
 import { AnswerBit } from "@/lib/answer-commitments";
 import { getEpochId } from "@/lib/game-epoch";
 import { QuestionDisplay } from "./QuestionDisplay";
+import { toast } from "@/hooks/use-toast";
 
 let BYPASS_GAME_DEV_MODE = true;
 
@@ -108,7 +109,7 @@ export function PrivateDataGame({
         console.error("Failed to fetch stored files:", body);
 
         if (body.error) {
-          alert("ERROR: " + body.error);
+          toast.error("Error", "ERROR: " + body.error);
           return;
         }
 
@@ -121,7 +122,7 @@ export function PrivateDataGame({
       // return gameQuestionDataSet[randomIndex];
     } catch (err) {
       console.error("Error fetching active question:", err);
-      alert("error!");
+      toast.error("Error", "Error fetching active question");
     } finally {
       setFetchingActiveQuestion(false);
     }
@@ -141,7 +142,7 @@ export function PrivateDataGame({
   const handleCommitAnswer = async () => {
     debugger;
     if (!randomQuestion || !selectedAnswer) {
-      alert("Unable to commit");
+      toast.error("Error", "Unable to commit");
       return;
     }
 
@@ -165,7 +166,8 @@ export function PrivateDataGame({
     if (
       localStoragePlayedLog.split(",").indexOf(currentHour.toString()) !== -1
     ) {
-      alert(
+      toast.error(
+        "Error",
         "E1: You've already responded to this question during this game round/hour",
       );
       return;
@@ -198,7 +200,8 @@ export function PrivateDataGame({
       selectedAnswer.index > 1 ||
       selectedAnswer.index < 0
     ) {
-      alert(
+      toast.error(
+        "Error",
         "Unable to commit as no answer index was given, we received: " +
           JSON.stringify(selectedAnswer),
       );

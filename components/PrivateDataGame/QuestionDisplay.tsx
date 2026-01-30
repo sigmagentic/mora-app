@@ -27,7 +27,7 @@ export function QuestionDisplay({
         <img
           src={question.img}
           alt={question.title || "Question"}
-          className="w-full rounded-lg"
+          className="w-full rounded-lg grayscale"
         />
       )}
       <p className="text-sm text-gray-700 leading-relaxed">{question.text}</p>

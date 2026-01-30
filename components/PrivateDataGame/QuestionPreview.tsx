@@ -47,11 +47,11 @@ export function QuestionPreview() {
 
   if (isLoading) {
     return (
-      <Card className="border-0 shadow-2xl bg-white/95 backdrop-blur-sm h-full">
+      <Card className="border-0 shadow-2xl bg-white/95 backdrop-blur-sm h-full flex flex-col items-center justify-center">
         <CardContent className="flex flex-col items-center justify-center py-12 px-6">
           <Loader2 className="w-6 h-6 animate-spin text-blue-600 mb-4" />
           <p className="text-sm text-gray-600 text-center">
-            Loading sample question...
+            Loading moral dilemma...
           </p>
         </CardContent>
       </Card>

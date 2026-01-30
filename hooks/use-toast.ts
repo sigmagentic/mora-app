@@ -139,7 +139,7 @@ function dispatch(action: Action) {
 
 type Toast = Omit<ToasterToast, 'id'>;
 
-function toast({ ...props }: Toast) {
+function toastFn({ ...props }: Toast) {
   const id = genId();
 
   const update = (props: ToasterToast) =>
@@ -168,6 +168,20 @@ function toast({ ...props }: Toast) {
   };
 }
 
+// react-hot-toast style: call toast() from anywhere; no hook needed in the caller
+const toast = Object.assign(toastFn, {
+  success: (message: string, description?: React.ReactNode) =>
+    toastFn({ title: message, description }),
+  error: (message: string, description?: React.ReactNode) =>
+    toastFn({
+      title: message,
+      description,
+      variant: 'destructive',
+    }),
+  message: (message: string, description?: React.ReactNode) =>
+    toastFn({ title: message, description }),
+});
+
 function useToast() {
   const [state, setState] = React.useState<State>(memoryState);
 
@@ -183,7 +197,7 @@ function useToast() {
 
   return {
     ...state,
-    toast,
+    toast: toastFn,
     dismiss: (toastId?: string) => dispatch({ type: 'DISMISS_TOAST', toastId }),
   };
 }

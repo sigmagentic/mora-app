@@ -37,7 +37,7 @@ function ResultRow({ item }: { item: PastResultItem }) {
             <img
               src={item.img}
               alt=""
-              className="h-24 w-full sm:h-28 sm:w-36 rounded-lg object-cover border border-gray-100"
+              className="h-24 w-full sm:h-28 sm:w-36 rounded-lg object-cover border border-gray-100 grayscale"
             />
           ) : (
             <div className="h-24 w-full sm:h-28 sm:w-36 rounded-lg bg-gray-100 border border-gray-100 flex items-center justify-center text-gray-400 text-xs">
@@ -83,7 +83,9 @@ function ResultRow({ item }: { item: PastResultItem }) {
 
           {/* Total responses */}
           <p className="text-xs text-gray-500">
-            <span className="font-medium text-gray-700">{item.total_responses}</span>{" "}
+            <span className="font-medium text-gray-700">
+              {item.total_responses}
+            </span>{" "}
             total responses
           </p>
 
@@ -160,7 +162,8 @@ export function PastResults() {
         if (!cancelled) setItems(Array.isArray(data) ? data : []);
       })
       .catch((e) => {
-        if (!cancelled) setError(e instanceof Error ? e.message : "Failed to load");
+        if (!cancelled)
+          setError(e instanceof Error ? e.message : "Failed to load");
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -180,11 +183,7 @@ export function PastResults() {
   }
 
   if (error) {
-    return (
-      <p className="py-6 text-center text-sm text-red-600">
-        {error}
-      </p>
-    );
+    return <p className="py-6 text-center text-sm text-red-600">{error}</p>;
   }
 
   if (items.length === 0) {

@@ -10,9 +10,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+// import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
+// import { Badge } from "@/components/ui/badge";
 import {
   Popover,
   PopoverContent,
@@ -46,6 +46,7 @@ import {
   AnswerBit,
   encryptAnswerForSecureStorage,
 } from "@/lib/answer-commitments";
+import { toast } from "@/hooks/use-toast";
 
 interface UserProfileProps {
   user: AppUser;
@@ -122,6 +123,19 @@ export function UserProfile({
 
   useEffect(() => {
     fetchStoredFiles();
+
+    // Short form (like react-hot-toast)
+    // toast.success("Saved!");
+    // toast.error("Something went wrong");
+    // toast.message("Here’s a note");
+
+    // With description
+    // toast.success("Done", "Your changes were saved.");
+    // toast.error("Error", "Please try again.");
+
+    // Full control (same as before)
+    // toast({ title: "Custom", description: "Optional", variant: "destructive" });
+
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -374,12 +388,12 @@ export function UserProfile({
     }
 
     if (!isSecureNote && !selectedPrivateFile) {
-      alert("No uploaded file detected so cannot save");
+      toast.error("Error", "No uploaded file detected so cannot save");
       return;
     }
 
     if (isSecureNote && !_newSecureNoteSession) {
-      alert("No secure note data detected so cannot save");
+      toast.error("Error", "No secure note data detected so cannot save");
       return;
     }
 
@@ -387,7 +401,7 @@ export function UserProfile({
       _newSecureNoteSession &&
       (!newSecureNoteFileLabel || newSecureNoteFileLabel === "")
     ) {
-      alert("Please enter a label for this secure note.");
+      toast.error("Error", "Please enter a label for this secure note.");
       return;
     }
 
@@ -415,12 +429,12 @@ export function UserProfile({
       }
 
       if (!CACHED_VMK) {
-        alert("Vault Master Key not available in memory.");
+        toast.error("Error", "Vault Master Key not available in memory.");
         return;
       }
 
       if (!selectedFileToSave) {
-        alert("No file selected for upload.");
+        toast.error("Error", "No file selected for upload.");
         return;
       }
 
@@ -549,7 +563,7 @@ export function UserProfile({
     dontDownloadButReturnUrl = false,
   ) {
     if (!CACHED_VMK) {
-      alert("Vault Master Key not available in memory.");
+      toast.error("Error", "Vault Master Key not available in memory.");
       return;
     }
 
@@ -571,7 +585,7 @@ export function UserProfile({
 
   async function decryptAndLoadFileToEdit(fileRow: any) {
     if (!CACHED_VMK) {
-      alert("Vault Master Key not available in memory.");
+      toast.error("Error", "Vault Master Key not available in memory.");
       return;
     }
 
@@ -652,7 +666,7 @@ export function UserProfile({
       const body = await res.json();
       if (!res.ok) {
         console.error("Delete error:", body);
-        alert("Failed to delete file. Please try again.");
+        toast.error("Error", "Failed to delete file. Please try again.");
         return;
       }
 
@@ -660,7 +674,7 @@ export function UserProfile({
       await fetchStoredFiles();
     } catch (err) {
       console.error("Error deleting file:", err);
-      alert("An error occurred while deleting the file.");
+      toast.error("Error", "An error occurred while deleting the file.");
     }
   };
 
@@ -677,8 +691,14 @@ export function UserProfile({
       return;
     }
 
+    // check if the password is at least 8 characters long
+    if (vaultPassword.length < 8) {
+      setVaultError("Password must be at least 8 characters long");
+      return;
+    }
+
     if (CACHED_VMK) {
-      alert("Vault Master Key already exists in memory.");
+      toast.error("Error", "Vault Master Key already exists in memory.");
       return;
     }
 
@@ -747,7 +767,7 @@ export function UserProfile({
 
     if (!res.ok) {
       console.error("Delete error:", body);
-      alert("Failed to create vault. Please try again.");
+      toast.error("Error", "Failed to create vault. Please try again.");
       setVaultError("Failed to create vault. Please try again.");
       return;
     } else {
@@ -813,7 +833,7 @@ export function UserProfile({
 
   const handleCommitLazyPRFSupport = async () => {
     if (!CACHED_VMK || !prfKek) {
-      alert("PRF KEK or VMK not available in memory.");
+      toast.error("Error", "PRF KEK or VMK not available in memory.");
       return;
     }
 
@@ -856,10 +876,14 @@ export function UserProfile({
 
       if (!res.ok) {
         console.error("Delete error:", body);
-        alert("Failed to commit the PRF vault access. Please try again.");
+        toast.error(
+          "Error",
+          "Failed to commit the PRF vault access. Please try again.",
+        );
         return;
       } else {
-        alert(
+        toast.success(
+          "Success",
           "PRF vault access committed successfully. Next time you login, it will be used for password-less vault access.",
         );
 
@@ -868,7 +892,7 @@ export function UserProfile({
       }
     } catch (error) {
       console.error("Error committing PRF support:", error);
-      alert("An error occurred while committing PRF support.");
+      toast.error("Error", "An error occurred while committing PRF support.");
     } finally {
       setCommittingPrfSupportToServer(false);
     }
@@ -941,7 +965,7 @@ export function UserProfile({
   ): Promise<boolean> => {
     debugger;
     if (!CACHED_VMK) {
-      alert("VMK not available in memory.");
+      toast.error("Error", "VMK not available in memory.");
       return false;
     }
 
@@ -984,13 +1008,14 @@ export function UserProfile({
 
     if (!res.ok) {
       console.error("Save answer commitment error:", body);
-      alert(
-        "Failed to save answer commitment." + body.error || "Unknown error",
+      toast.error(
+        "Error",
+        "Failed to save answer commitment." + (body.error || "Unknown error"),
       );
       return false;
     }
 
-    alert("Answer commitment saved successfully.");
+    toast.success("Success", "Answer commitment saved successfully.");
     return true;
   };
 
@@ -1133,7 +1158,7 @@ export function UserProfile({
                       </div>
                     </CardHeader>
 
-                    <CardContent className="space-y-3 sm:space-y-4 px-4 sm:px-6">
+                    <CardContent className="space-y-3 sm:space-y-4 px-4 sm:px-6 min-h-[300px]">
                       <div className="space-y-3">
                         {storedSecureNoteForPrivateGameFile === null &&
                           newSecureNoteSession === null && (
@@ -1404,7 +1429,7 @@ export function UserProfile({
           <Card className="mt-4 border-0 shadow-2xl backdrop-blur-sm">
             <CardHeader className="px-4 sm:px-6">
               <div className="flex flex-col">
-                <CardTitle className="text-xl sm:text-2xl font-bold text-gray-900">
+                <CardTitle className="text-xl font-bold text-gray-900">
                   <span className="text-blue-600">{">"}</span> Master Vault
                   Password
                 </CardTitle>
@@ -1414,9 +1439,9 @@ export function UserProfile({
                       <PopoverTrigger asChild>
                         <button
                           type="button"
-                          className="underline decoration-dotted cursor-help"
+                          className="hover:underline decoration-dotted cursor-help mt-2"
                         >
-                          ⚠️ What?
+                          ⚠️ What is this?
                         </button>
                       </PopoverTrigger>
                       <PopoverContent className="max-w-sm text-xs text-gray-700">

@@ -1,22 +1,26 @@
-import './globals.css';
-import type { Metadata } from 'next';
-import { JetBrains_Mono } from 'next/font/google';
+import "./globals.css";
+import type { Metadata } from "next";
+import { JetBrains_Mono } from "next/font/google";
+import { Toaster } from "@/components/ui/toaster";
 
-const jetbrainsMono = JetBrains_Mono({ 
-  subsets: ['latin'],
-  variable: '--font-mono',
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
 });
 
 export const metadata: Metadata = {
-  title: process.env.NEXT_PUBLIC_SITE_TITLE || 'Passkey Authentication Demo',
-  description: process.env.NEXT_PUBLIC_SITE_DESCRIPTION || 'Secure passwordless authentication using WebAuthn passkeys',
+  title: process.env.NEXT_PUBLIC_SITE_TITLE || "Mora",
+  description:
+    process.env.NEXT_PUBLIC_SITE_DESCRIPTION ||
+    "Mora exists to capture human values the world cannot see — without ever revealing the people behind them.",
   icons: {
     icon: [
-      { url: '/favicon.ico' },
-      { url: '/icon.png', type: 'image/png' },
+      // { url: '/favicon.ico' },
+      { url: "/icon.png", type: "image/png" },
     ],
-    shortcut: '/favicon.ico',
-    apple: '/icon.png',
+    // shortcut: '/favicon.ico',
+    shortcut: "/icon.png",
+    apple: "/icon.png",
   },
 };
 
@@ -27,7 +31,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${jetbrainsMono.variable} font-mono`}>{children}</body>
+      <body className={`${jetbrainsMono.variable} font-mono`}>
+        {children}
+        <Toaster />
+      </body>
     </html>
   );
 }

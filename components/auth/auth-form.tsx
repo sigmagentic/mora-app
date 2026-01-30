@@ -285,16 +285,6 @@ export function AuthForm({ onAuthSuccess }: AuthFormProps) {
   return (
     <div className="w-full max-w-md mx-auto px-4 sm:px-0">
       <Card className="border-0 shadow-2xl bg-white/95 backdrop-blur-sm">
-        <CardHeader className="text-center pb-2 px-4 sm:px-6">
-          <div className="mx-auto w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-full flex items-center justify-center mb-3 sm:mb-4">
-            <span className="text-blue-600 text-base sm:text-lg">🔐</span>
-          </div>
-          <CardTitle className="text-xl sm:text-2xl font-bold text-gray-900">
-            <span className="text-blue-600">{">"}</span> authenticate
-          </CardTitle>
-          <CardDescription className="text-gray-600"></CardDescription>
-        </CardHeader>
-
         <CardContent className="pt-4 px-4 sm:px-6">
           <Tabs defaultValue="login" className="w-full">
             <TabsList className="grid w-full grid-cols-2 mb-4 sm:mb-6 h-9 sm:h-10">
@@ -332,14 +322,14 @@ export function AuthForm({ onAuthSuccess }: AuthFormProps) {
                     htmlFor="register-username"
                     className="text-xs sm:text-sm font-medium text-gray-700"
                   >
-                    username: <span className="text-red-500">*</span>
+                    unique username: <span className="text-red-500">*</span>
                   </Label>
                   <Input
                     id="register-username"
                     type="text"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    placeholder="your_username"
+                    placeholder="your_unique_username"
                     required
                     className="h-10 sm:h-11 text-sm sm:text-base"
                   />

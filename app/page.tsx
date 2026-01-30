@@ -5,12 +5,12 @@ import { AuthForm } from "@/components/auth/auth-form";
 import { UserProfile } from "@/components/auth/user-profile";
 import { QuestionPreview } from "@/components/PrivateDataGame/QuestionPreview";
 import { AppUser } from "@/types/types";
+import Image from "next/image";
 
 export default function Home() {
   const [user, setUser] = useState<AppUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [appVersion, setAppVersion] = useState<string>("");
-
   const [prfKek, setPrfKek] = useState<CryptoKey | null>(null);
 
   useEffect(() => {
@@ -58,38 +58,27 @@ export default function Home() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-white/90 via-white/80 to-white/70 flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex flex-col">
+    <main className="min-h-screen bg-gradient-to-br from-white/90 via-white/80 to-white/70  flex flex-col">
       <div className="flex-1 flex flex-col justify-top px-4 py-6 sm:py-8 lg:py-6">
         <div className="container mx-auto h-full max-w-6xl">
-          {!user ? (
-            <div className="text-center mb-3">
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-2 sm:mb-4">
-                {process.env.NEXT_PUBLIC_APP_TITLE || ""}
-              </h1>
-              <div className="max-w-2xl mx-auto space-y-1 sm:space-y-2">
-                <p className="text-sm sm:text-base lg:text-lg xl:text-xl text-gray-600 leading-relaxed">
-                  <span className="text-blue-600">{">"}</span>{" "}
-                  <span className="inline-block">
-                    {process.env.NEXT_PUBLIC_APP_DESCRIPTION || ""}
-                  </span>
-                </p>
-                <p className="text-xs sm:text-sm text-gray-500 font-normal leading-relaxed">
-                  {/* */}{" "}
-                  <span className="inline-block">
-                    {process.env.NEXT_PUBLIC_APP_SUBTITLE || ""}
-                  </span>
-                </p>
+          {user && (
+            <div className="bgx-red-500 flex flex-row items-center justify-center gap-4 pb-2">
+              <div className="flex justify-center bg-white rounded-full p-[10px] w-fit mx-auto overflow-hidden">
+                <Image
+                  src="/mora-cat-logo.png"
+                  alt="Mora Cat Logo"
+                  width={60}
+                  height={20}
+                  className=""
+                />
               </div>
-            </div>
-          ) : (
-            <div className="bgx-red-500 flex flex-row items-center justify-center gap-4">
               <div className="bgx-yellow-500">
                 <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900">
                   {process.env.NEXT_PUBLIC_APP_TITLE || ""}
@@ -119,11 +108,42 @@ export default function Home() {
               />
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-6">
-              <div className="flex justify-center">
-                <AuthForm onAuthSuccess={handleAuthSuccess} />
+            <div className="grid md:grid-cols-2 gap-6 bgx-red-500">
+              <div className="bgx-blue-500 mt-20">
+                <div className="flex justify-center bg-white rounded-full p-[10px] w-fit mx-auto overflow-hidden">
+                  <Image
+                    src="/mora-cat-logo.png"
+                    alt="Mora Cat Logo"
+                    width={120}
+                    height={40}
+                    className=""
+                  />
+                </div>
+                <div className="text-center mb-3">
+                  <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-2 sm:mb-4">
+                    {process.env.NEXT_PUBLIC_APP_TITLE || ""}
+                  </h1>
+                  <div className="max-w-2xl mx-auto space-y-1 sm:space-y-2">
+                    <p className="text-sm sm:text-base lg:text-lg xl:text-xl text-gray-600 leading-relaxed">
+                      <span className="text-blue-600">{">"}</span>{" "}
+                      <span className="inline-block">
+                        {process.env.NEXT_PUBLIC_APP_DESCRIPTION || ""}
+                      </span>
+                    </p>
+                    <p className="text-xs sm:text-sm text-gray-500 font-normal leading-relaxed">
+                      {/* */}{" "}
+                      <span className="inline-block">
+                        {process.env.NEXT_PUBLIC_APP_SUBTITLE || ""}
+                      </span>
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex justify-center">
+                  <AuthForm onAuthSuccess={handleAuthSuccess} />
+                </div>
               </div>
-              <div className="flex justify-center min-w-md max-w-md mx-auto">
+              <div className="bgx-green-500">
                 <QuestionPreview />
               </div>
             </div>
