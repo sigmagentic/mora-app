@@ -101,10 +101,10 @@ export default function Home() {
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-6 ">
-              <div className="flex justify-center md:justify-end ">
+              <div className="flex justify-center">
                 <AuthForm onAuthSuccess={handleAuthSuccess} />
               </div>
-              <div className="flex justify-center md:justify-end max-w-md mx-auto">
+              <div className="flex justify-center min-w-md max-w-md mx-auto">
                 <QuestionPreview />
               </div>
             </div>

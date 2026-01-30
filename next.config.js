@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  experimental: {
+    serverActions: true,
+  },
   eslint: {
     ignoreDuringBuilds: true,
   },
@@ -9,7 +12,11 @@ const nextConfig = {
       config.externals.push("bufferutil", "utf-8-validate", "ws");
     }
     config.ignoreWarnings = [
-      { module: /@supabase\/realtime-js/, message: /Critical dependency: the request of a dependency is an expression/ },
+      {
+        module: /@supabase\/realtime-js/,
+        message:
+          /Critical dependency: the request of a dependency is an expression/,
+      },
     ];
     return config;
   },

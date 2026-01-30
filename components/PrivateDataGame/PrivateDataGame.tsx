@@ -24,12 +24,12 @@ interface PrivateDataGameProps {
   onAnswerSelection: (
     question: GameQuestion,
     answer: GameQuestionAnswer,
-    answerReasoning?: string
+    answerReasoning?: string,
   ) => Promise<boolean>;
   onAnswerCommitment: (
     questionId: number,
     epochId: string,
-    answerBit: AnswerBit
+    answerBit: AnswerBit,
   ) => Promise<boolean>;
 }
 
@@ -39,7 +39,7 @@ export function PrivateDataGame({
   onAnswerCommitment,
 }: PrivateDataGameProps) {
   const [randomQuestion, setRandomQuestion] = useState<GameQuestion | null>(
-    null
+    null,
   );
   const [selectedAnswer, setSelectedAnswer] =
     useState<GameQuestionAnswer | null>(null);
@@ -53,7 +53,7 @@ export function PrivateDataGame({
     return storedLog ? storedLog.split(",").map(Number) : [];
   });
   const [lastPlayedDate, setLastPlayedDate] = useState<string>(
-    () => localStorage.getItem("x-gameplay-played-last-ddmmyy") || ""
+    () => localStorage.getItem("x-gameplay-played-last-ddmmyy") || "",
   );
   const [fetchingActiveQuestion, setFetchingActiveQuestion] =
     useState<boolean>(false);
@@ -86,7 +86,6 @@ export function PrivateDataGame({
     return () => clearInterval(interval);
   }, [lastPlayedDate]);
 
-
   useEffect(() => {
     if (!randomQuestion) {
       window.scrollTo({
@@ -96,7 +95,6 @@ export function PrivateDataGame({
       });
     }
   }, [randomQuestion]);
-
 
   const getRandomQuestion = async () => {
     try {
@@ -154,11 +152,11 @@ export function PrivateDataGame({
     // ideally we check local storage first, and THEN we check currentGameSecureNoteStorage
     console.log(
       "localstorage - ",
-      localStorage.getItem("x-gameplay-played-hr-log")
+      localStorage.getItem("x-gameplay-played-hr-log"),
     );
     console.log(
       "currentGameSecureNoteStorage - ",
-      currentGameSecureNoteStorage
+      currentGameSecureNoteStorage,
     );
 
     const localStoragePlayedLog =
@@ -168,7 +166,7 @@ export function PrivateDataGame({
       localStoragePlayedLog.split(",").indexOf(currentHour.toString()) !== -1
     ) {
       alert(
-        "E1: You've already responded to this question during this game round/hour"
+        "E1: You've already responded to this question during this game round/hour",
       );
       return;
     }
@@ -192,15 +190,29 @@ export function PrivateDataGame({
 
     setIsCommittingAnswer(true);
 
-
     const now = new Date();
     const _isActiveHHDDMMYY = getEpochId(now); // HHDDMMYY, hour 1–24, month 1–12
 
-    await onAnswerCommitment(randomQuestion!.id, _isActiveHHDDMMYY, selectedAnswer!.id === 1 ? 0 : 1);
+    if (
+      typeof selectedAnswer.index !== "number" ||
+      selectedAnswer.index > 1 ||
+      selectedAnswer.index < 0
+    ) {
+      alert(
+        "Unable to commit as no answer index was given, we received: " +
+          JSON.stringify(selectedAnswer),
+      );
+      setIsCommittingAnswer(false);
+      return;
+    }
+
+    await onAnswerCommitment(
+      randomQuestion!.id,
+      _isActiveHHDDMMYY,
+      selectedAnswer.index as AnswerBit,
+    );
 
     await onAnswerSelection(randomQuestion!, selectedAnswer!, reasoning);
-
-
 
     // Update played hours
     const newPlayed = [...playedHours, currentHour];
@@ -213,7 +225,6 @@ export function PrivateDataGame({
       setRandomQuestion(null);
     }, 2000);
   };
-
 
   const hours = Array.from({ length: 24 }, (_, i) => i + 1);
 
@@ -307,8 +318,8 @@ export function PrivateDataGame({
 
                 <div className="p-2 sm:p-3 bg-gray-50 rounded-lg">
                   <p className="text-xs py-2">
-                    A short &quot;reasoning&quot; for your answer is optional but
-                    highly desirable! What is your honest reasoning for this
+                    A short &quot;reasoning&quot; for your answer is optional
+                    but highly desirable! What is your honest reasoning for this
                     answer? why did you pick it? (250 characters max).
                   </p>
                   <Textarea

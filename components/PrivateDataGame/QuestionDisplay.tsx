@@ -36,10 +36,16 @@ export function QuestionDisplay({
         onValueChange={(value) => {
           if (!disabled && onAnswerChange) {
             const answer = question.answers.find(
-              (a) => a.id.toString() === value
+              (a) => a.id.toString() === value,
             );
-            if (answer) {
-              onAnswerChange(answer);
+
+            // the index of the answer becomes the answer bit (0 or 1)
+            const answerIndex = question.answers.findIndex(
+              (a) => a.id === answer?.id,
+            );
+
+            if (answer && answerIndex !== -1) {
+              onAnswerChange({ ...answer, index: answerIndex });
             }
           }
         }}

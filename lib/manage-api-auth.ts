@@ -5,9 +5,11 @@ import { NextRequest, NextResponse } from "next/server";
  * Set MANAGE_API_KEY in the environment.
  * @returns NextResponse with 401/500 to return, or null if valid
  */
-export function validateManageApiKey(request: NextRequest): NextResponse | null {
+export function validateManageApiKey(
+  request: NextRequest,
+): NextResponse | null {
   console.log("validateManageApiKey route called");
-  
+
   const key = process.env.MANAGE_API_KEY;
 
   console.log("key ", key);
@@ -15,7 +17,7 @@ export function validateManageApiKey(request: NextRequest): NextResponse | null 
     console.error("MANAGE_API_KEY is not configured");
     return NextResponse.json(
       { error: "Manage API not configured" },
-      { status: 500 }
+      { status: 500 },
     );
   }
   const provided = request.headers.get("x-api-key");

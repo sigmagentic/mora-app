@@ -65,8 +65,8 @@ export function QuestionPreview() {
         <CardContent className="flex flex-col items-center justify-center py-12 px-6">
           <Loader2 className="w-6 h-6 animate-spin text-blue-600 mb-4" />
           <p className="text-sm text-gray-600 text-center">
-            New questions being loaded into the game, this make some time. But
-            you can still login/register to play
+            New morality questions are being loaded into the game, this make
+            some time. But you can still login/register to play
           </p>
         </CardContent>
       </Card>
@@ -85,7 +85,8 @@ export function QuestionPreview() {
         <QuestionDisplay question={question} disabled={true} showTitle={true} />
         <div className="mt-6 pt-6 border-t border-gray-200">
           <p className="text-center text-sm font-medium text-gray-700">
-            What would you do? login/register and tell us...
+            What would you do? login/register and privately share your moral
+            judgement...
           </p>
         </div>
       </CardContent>

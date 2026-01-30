@@ -13,7 +13,17 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { User, Trash2, Download, Edit, Loader2, ChevronDown, ChevronUp, Power, KeyRound } from "lucide-react";
+import {
+  User,
+  Trash2,
+  Download,
+  Edit,
+  Loader2,
+  ChevronDown,
+  ChevronUp,
+  Power,
+  KeyRound,
+} from "lucide-react";
 import { uint8ToBase64, base64ToUint8 } from "@/lib/utils";
 import { deriveKEK, isPRFSupported } from "@/lib/cryptography";
 import { Textarea } from "../ui/textarea";
@@ -24,7 +34,12 @@ import {
   GameQuestionAnswer,
 } from "@/types/types";
 import { PrivateDataGame } from "../PrivateDataGame/PrivateDataGame";
-import { buildMoraResponsePayload, deriveMoraIdentitySecret, AnswerBit, encryptAnswerForSecureStorage } from "@/lib/answer-commitments";
+import {
+  buildMoraResponsePayload,
+  deriveMoraIdentitySecret,
+  AnswerBit,
+  encryptAnswerForSecureStorage,
+} from "@/lib/answer-commitments";
 
 interface UserProfileProps {
   user: AppUser;
@@ -83,7 +98,7 @@ export function UserProfile({
   };
 
   const [selectedPrivateFile, setSelectedPrivateFile] = useState<File | null>(
-    null
+    null,
   ); // private file upload
   const [newSecureNoteSession, setNewSecureNoteSession] = useState<
     string | null
@@ -180,7 +195,7 @@ export function UserProfile({
         length: 256,
       },
       true, // extractable
-      ["encrypt", "decrypt"]
+      ["encrypt", "decrypt"],
     );
   }
 
@@ -209,7 +224,7 @@ export function UserProfile({
         length: 256,
       },
       true, // extractable (we need to wrap it)
-      ["encrypt", "decrypt"]
+      ["encrypt", "decrypt"],
     );
   }
 
@@ -222,7 +237,7 @@ export function UserProfile({
         iv,
       },
       dek,
-      plaintext
+      plaintext,
     );
 
     return {
@@ -242,7 +257,7 @@ export function UserProfile({
         iv,
       },
       vmk,
-      rawDEK
+      rawDEK,
     );
 
     return {
@@ -255,7 +270,7 @@ export function UserProfile({
   async function encryptFileForUpload(
     file: File,
     vmk: CryptoKey,
-    fileLabel?: string | null
+    fileLabel?: string | null,
   ) {
     const plaintext = await readFileAsArrayBuffer(file);
 
@@ -294,7 +309,7 @@ export function UserProfile({
       metadata: Record<string, any>;
     },
     _newSecureNoteSession: string,
-    storageFileId?: string
+    storageFileId?: string,
   ) {
     console.log({
       encryptedFileBytes: payload.encryptedFile.byteLength,
@@ -304,7 +319,7 @@ export function UserProfile({
     });
 
     const encryptedFileB64 = uint8ToBase64(
-      new Uint8Array(payload.encryptedFile)
+      new Uint8Array(payload.encryptedFile),
     );
     const fileIVB64 = uint8ToBase64(payload.fileIV);
     const encryptedDEKB64 = uint8ToBase64(new Uint8Array(payload.encryptedDEK));
@@ -349,7 +364,7 @@ export function UserProfile({
 
   const encryptAndUpload = async (
     isSecureNote: boolean = false,
-    useThisRawNewSecureNoteSessionText?: string
+    useThisRawNewSecureNoteSessionText?: string,
   ) => {
     let _newSecureNoteSession: string | null = newSecureNoteSession;
 
@@ -415,7 +430,7 @@ export function UserProfile({
       const encryptedPayload = await encryptFileForUpload(
         selectedFileToSave,
         CACHED_VMK,
-        newSecureNoteFileLabel
+        newSecureNoteFileLabel,
       );
 
       let res;
@@ -426,7 +441,7 @@ export function UserProfile({
           body: createMultipartFormData(
             encryptedPayload,
             _newSecureNoteSession!,
-            secureNoteEditModeFile.id
+            secureNoteEditModeFile.id,
           ),
           credentials: "include", // if you use cookies / sessions
         });
@@ -435,7 +450,7 @@ export function UserProfile({
           method: "POST",
           body: createMultipartFormData(
             encryptedPayload,
-            _newSecureNoteSession!
+            _newSecureNoteSession!,
           ),
           credentials: "include", // if you use cookies / sessions
         });
@@ -480,7 +495,7 @@ export function UserProfile({
   async function decryptDEKWithVMK(
     encryptedDEK: Uint8Array,
     dekIV: Uint8Array,
-    vmk: CryptoKey
+    vmk: CryptoKey,
   ): Promise<CryptoKey> {
     const rawDEK = await crypto.subtle.decrypt(
       {
@@ -488,7 +503,7 @@ export function UserProfile({
         iv: dekIV as any,
       },
       vmk,
-      encryptedDEK as any
+      encryptedDEK as any,
     );
 
     return crypto.subtle.importKey("raw", rawDEK, { name: "AES-GCM" }, false, [
@@ -500,7 +515,7 @@ export function UserProfile({
   async function decryptFileWithDEK(
     encryptedFile: Uint8Array,
     fileIV: Uint8Array,
-    dek: CryptoKey
+    dek: CryptoKey,
   ): Promise<ArrayBuffer> {
     return crypto.subtle.decrypt(
       {
@@ -508,7 +523,7 @@ export function UserProfile({
         iv: fileIV as any,
       },
       dek,
-      encryptedFile as any
+      encryptedFile as any,
     );
   }
 
@@ -524,7 +539,7 @@ export function UserProfile({
     const plaintextBuffer = await decryptFileWithDEK(
       encryptedFile,
       fileIV,
-      dek
+      dek,
     );
 
     return new Blob([plaintextBuffer], {
@@ -534,7 +549,7 @@ export function UserProfile({
 
   async function decryptAndDownloadFile(
     fileRow: any,
-    dontDownloadButReturnUrl = false
+    dontDownloadButReturnUrl = false,
   ) {
     if (!CACHED_VMK) {
       alert("Vault Master Key not available in memory.");
@@ -595,15 +610,15 @@ export function UserProfile({
 
       // Separate private files and secure notes
       const secureNotes = body.files.filter(
-        (file: any) => file.storage_type === 1
+        (file: any) => file.storage_type === 1,
       );
 
       const privateFiles = body.files.filter(
-        (file: any) => file.storage_type === 2
+        (file: any) => file.storage_type === 2,
       );
 
       const privateGameSecureNote = body.files.find(
-        (file: any) => file.storage_type === 3
+        (file: any) => file.storage_type === 3,
       );
 
       setStoredPrivateFiles(privateFiles);
@@ -626,7 +641,7 @@ export function UserProfile({
         `/api/storage/delete-storage?id=${encodeURIComponent(fileId)}`,
         {
           method: "DELETE",
-        }
+        },
       );
       // const res = await fetch(
       //   `/api/storage/delete-storage?id=${encodeURIComponent(
@@ -688,7 +703,7 @@ export function UserProfile({
     const encryptedVMK = await crypto.subtle.encrypt(
       { name: "AES-GCM", iv },
       kek,
-      exportedVMK
+      exportedVMK,
     );
 
     // 5. IF PRF is available, we can also encrypt the VMK with that so both can be used
@@ -702,7 +717,7 @@ export function UserProfile({
       prf_encryptedVMK = await crypto.subtle.encrypt(
         { name: "AES-GCM", iv: prf_vmk_iv },
         prfKek,
-        exportedVMK
+        exportedVMK,
       );
     }
 
@@ -712,7 +727,7 @@ export function UserProfile({
     formData.append("kek_salt", saltBase64);
     formData.append(
       "encrypted_vmk",
-      uint8ToBase64(new Uint8Array(encryptedVMK))
+      uint8ToBase64(new Uint8Array(encryptedVMK)),
     );
     formData.append("vmk_iv", uint8ToBase64(iv));
     // formData.append("userId", user.id);
@@ -720,7 +735,7 @@ export function UserProfile({
     if (prfKek && prf_encryptedVMK && prf_vmk_iv) {
       formData.append(
         "prf_encrypted_vmk",
-        uint8ToBase64(new Uint8Array(prf_encryptedVMK))
+        uint8ToBase64(new Uint8Array(prf_encryptedVMK)),
       );
       formData.append("prf_vmk_iv", uint8ToBase64(prf_vmk_iv));
     }
@@ -749,7 +764,7 @@ export function UserProfile({
   };
 
   const handleVaultPasswordBasedVmkUnwrapping = async (
-    usePrfBasedUnwrapping?: boolean
+    usePrfBasedUnwrapping?: boolean,
   ) => {
     let kek = null;
     let encryptedVMK = null;
@@ -777,7 +792,7 @@ export function UserProfile({
       const vmkRaw = await crypto.subtle.decrypt(
         { name: "AES-GCM", iv: iv as any },
         kek,
-        encryptedVMK as any
+        encryptedVMK as any,
       );
 
       CACHED_VMK = await crypto.subtle.importKey(
@@ -785,7 +800,7 @@ export function UserProfile({
         vmkRaw,
         "AES-GCM",
         true, // extractable
-        ["encrypt", "decrypt"]
+        ["encrypt", "decrypt"],
       );
     } catch (decryptionError) {
       setVaultError("Incorrect vault password. Please try again.");
@@ -820,7 +835,7 @@ export function UserProfile({
       prf_encryptedVMK = await crypto.subtle.encrypt(
         { name: "AES-GCM", iv: prf_vmk_iv },
         prfKek,
-        exportedVMK
+        exportedVMK,
       );
 
       const formData = new FormData();
@@ -829,7 +844,7 @@ export function UserProfile({
 
       formData.append(
         "prf_encrypted_vmk",
-        uint8ToBase64(new Uint8Array(prf_encryptedVMK))
+        uint8ToBase64(new Uint8Array(prf_encryptedVMK)),
       );
 
       formData.append("prf_vmk_iv", uint8ToBase64(prf_vmk_iv));
@@ -848,7 +863,7 @@ export function UserProfile({
         return;
       } else {
         alert(
-          "PRF vault access committed successfully. Next time you login, it will be used for password-less vault access."
+          "PRF vault access committed successfully. Next time you login, it will be used for password-less vault access.",
         );
 
         // lets get the latets auth status (which will have the PRF metadata and sync it with the UI)
@@ -873,11 +888,12 @@ export function UserProfile({
     }
   };
 
-  // bespoke handlers
+  // S: bespoke handlers
+  // save the data to the secure note
   const handlePrivateDataGameAnswerSelection = async (
     question: GameQuestion,
     answer: GameQuestionAnswer,
-    answerReasoning?: string
+    answerReasoning?: string,
   ) => {
     /*
       questionId: question.id
@@ -913,35 +929,46 @@ export function UserProfile({
   const test_handleAnswerChallengeGeneration = async (input: string) => {
     debugger;
     const [questionId, epochId, answerBit] = input.split(",");
-    await handleAnswerChallengeGenerationAndCommitment(parseInt(questionId), epochId, parseInt(answerBit) as AnswerBit);
+    await handleAnswerChallengeGenerationAndCommitment(
+      parseInt(questionId),
+      epochId,
+      parseInt(answerBit) as AnswerBit,
+    );
   };
 
-  const handleAnswerChallengeGenerationAndCommitment = async (questionId: number, epochId: string, answerBit: AnswerBit) : Promise<boolean> => {
-   debugger;
+  // commit the answer commitment to the backend (this will be replaced with a Solana program in the future)
+  const handleAnswerChallengeGenerationAndCommitment = async (
+    questionId: number,
+    epochId: string,
+    answerBit: AnswerBit,
+  ): Promise<boolean> => {
+    debugger;
     if (!CACHED_VMK) {
       alert("VMK not available in memory.");
       return false;
     }
 
-    const moraIdentitySecret  = await deriveMoraIdentitySecret(CACHED_VMK); 
+    const moraIdentitySecret = await deriveMoraIdentitySecret(CACHED_VMK);
 
-    const {payload, salt} = await buildMoraResponsePayload({
+    const { payload, salt } = await buildMoraResponsePayload({
       moraIdentitySecret,
       questionId,
       epochId,
       answerBit,
     });
 
-    
-    
     // create a encrypted_answer (in the final version most likely an archium key will be used to encrypt it)
     const answerBitBuffer = new TextEncoder().encode(answerBit.toString());
-    const {ciphertext: encryptedAnswer, iv: encryptedAnswerIv} = await encryptAnswerForSecureStorage(answerBitBuffer.buffer, CACHED_VMK);
-
+    const { ciphertext: encryptedAnswer, iv: encryptedAnswerIv } =
+      await encryptAnswerForSecureStorage(answerBitBuffer.buffer, CACHED_VMK);
 
     // note that the encryptedAnswer decoding etc is probabaly all wrong right now (just a placeholder)
-    const payloadToSave = {...payload, encrypted_answer: uint8ToBase64(new Uint8Array(encryptedAnswer)), encrypted_answer_iv: uint8ToBase64(encryptedAnswerIv), tmp_answer_bit: answerBit};
-  
+    const payloadToSave = {
+      ...payload,
+      encrypted_answer: uint8ToBase64(new Uint8Array(encryptedAnswer)),
+      encrypted_answer_iv: uint8ToBase64(encryptedAnswerIv),
+      tmp_answer_bit: answerBit,
+    };
 
     // commitment: send to backend
     // salt: keep client-side only (or encrypt later for Arcium or FHE if needed) // for now, just keep it in memory
@@ -959,8 +986,10 @@ export function UserProfile({
 
     if (!res.ok) {
       console.error("Save answer commitment error:", body);
-      alert("Failed to save answer commitment." + body.error || "Unknown error");
-      return false; 
+      alert(
+        "Failed to save answer commitment." + body.error || "Unknown error",
+      );
+      return false;
     }
 
     alert("Answer commitment saved successfully.");
@@ -997,24 +1026,22 @@ export function UserProfile({
                   <Power className="h-4 w-4" />
                 )}
               </Button>
-              {isDevicePRFSupported &&
-                prfKek &&
-                !user.prfEncryptedVmk && (
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-9 w-9 rounded-full shrink-0 text-green-600 hover:bg-green-50 hover:text-green-700"
-                    onClick={handleCommitLazyPRFSupport}
-                    disabled={committingPrfSupportToServer}
-                    title="Commit pure-biometrics encryption support"
-                  >
-                    {committingPrfSupportToServer ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <KeyRound className="h-4 w-4" />
-                    )}
-                  </Button>
-                )}
+              {isDevicePRFSupported && prfKek && !user.prfEncryptedVmk && (
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-9 w-9 rounded-full shrink-0 text-green-600 hover:bg-green-50 hover:text-green-700"
+                  onClick={handleCommitLazyPRFSupport}
+                  disabled={committingPrfSupportToServer}
+                  title="Commit pure-biometrics encryption support"
+                >
+                  {committingPrfSupportToServer ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <KeyRound className="h-4 w-4" />
+                  )}
+                </Button>
+              )}
             </div>
           ) : (
             <Card className="profile-card mt-4 border-0 shadow-2xl bg-white/95 backdrop-blur-sm w-full max-w-sm">
@@ -1071,7 +1098,9 @@ export function UserProfile({
 
                   {user.email && (
                     <div className="flex items-center space-x-3 p-2 sm:p-3 bg-gray-50 rounded-lg">
-                      <span className="text-gray-500 text-xs sm:text-sm">@</span>
+                      <span className="text-gray-500 text-xs sm:text-sm">
+                        @
+                      </span>
                       <div className="min-w-0 flex-1">
                         <p className="text-xs sm:text-sm font-medium text-gray-700">
                           email:
@@ -1085,7 +1114,9 @@ export function UserProfile({
 
                   {isDevicePRFSupported && (
                     <div className="flex items-center space-x-3 p-2 sm:p-3 bg-gray-50 rounded-lg">
-                      <span className="text-gray-500 text-xs sm:text-sm">^</span>
+                      <span className="text-gray-500 text-xs sm:text-sm">
+                        ^
+                      </span>
                       <div className="min-w-0 flex-1">
                         <p className="text-xs sm:text-xs font-medium text-gray-700">
                           Biometrics-Powered Data Encryption:
@@ -1117,11 +1148,12 @@ export function UserProfile({
                             <span className="text-red-600 text-[10px]">
                               ✗ Biometrics vault key not yet generated. But your
                               data is still fully encrypted with zero-knowledge
-                              privacy using your password, which you will need to
-                              enter each time you login. Once a Pure-Biometrics
-                              key is added to your account, you dont need to use
-                              your password each time to access your data! This
-                              key will be generated on your next login{" "}
+                              privacy using your password, which you will need
+                              to enter each time you login. Once a
+                              Pure-Biometrics key is added to your account, you
+                              dont need to use your password each time to access
+                              your data! This key will be generated on your next
+                              login{" "}
                               {user.prfEncryptedVmk &&
                                 " but committed in the past session!"}
                             </span>
@@ -1183,13 +1215,16 @@ export function UserProfile({
                     <CardHeader className="px-4 sm:px-6">
                       <div className="flex flex-col">
                         <CardTitle className="text-lg sm:text-xl font-semibold">
-                        let's play a game...
+                          let's play a game...
                         </CardTitle>
                         <CardDescription className="text-gray-600 text-xs">
-                          ... to collect highly valuable &quot;human morality&quot; data on a longitudinal basic, to measure your moral compass over time.
-                          All data collected is stored with zero-knowledge privacy
-                          guarantees. NO ONE can see your data! ONLY 24 questions asked per day. A new one
-                          unlocked each UTC hour.
+                          ... to collect highly valuable &quot;human
+                          morality&quot; data on a longitudinal basic, to
+                          measure your moral compass over time. All data
+                          collected is stored with zero-knowledge privacy
+                          guarantees. NO ONE can see your data! ONLY 24
+                          questions asked per day. A new one unlocked each UTC
+                          hour.
                         </CardDescription>
                       </div>
                     </CardHeader>
@@ -1226,7 +1261,9 @@ export function UserProfile({
                                 onAnswerSelection={
                                   handlePrivateDataGameAnswerSelection
                                 }
-                                onAnswerCommitment={handleAnswerChallengeGenerationAndCommitment}
+                                onAnswerCommitment={
+                                  handleAnswerChallengeGenerationAndCommitment
+                                }
                               />
                             </div>
                             <div className="p-2 sm:p-3 bg-gray-50 rounded-lg">
@@ -1263,7 +1300,7 @@ export function UserProfile({
                                         secureNoteEditModeFile
                                           ? "editing"
                                           : "creating"
-                                      } this note?`
+                                      } this note?`,
                                     ) == true
                                   ) {
                                     setNewSecureNoteSession(null);
@@ -1301,21 +1338,25 @@ export function UserProfile({
                           </>
                         )}
 
-                    <div>
-                            <p>Testing commitment generation...</p>
-                            <Input
-                            type="text"                                
-                            placeholder="question_id:X,epochId:Y,answerBit:Z"                                
+                        <div>
+                          <p>Testing commitment generation...</p>
+                          <Input
+                            type="text"
+                            placeholder="question_id:X,epochId:Y,answerBit:Z"
                             className="h-10 sm:h-11 text-sm"
                             value={commitmentTestInput}
-                            onChange={(e) => setCommitmentTestInput(e.target.value as string)}
+                            onChange={(e) =>
+                              setCommitmentTestInput(e.target.value as string)
+                            }
                             onKeyDown={(e) => {
                               if (e.key === "Enter") {
-                                test_handleAnswerChallengeGeneration(commitmentTestInput);
+                                test_handleAnswerChallengeGeneration(
+                                  commitmentTestInput,
+                                );
                               }
                             }}
                           />
-                          </div>
+                        </div>
 
                         <div>
                           {fetchingStoredFiles && (
@@ -1366,7 +1407,7 @@ export function UserProfile({
                                       handleDeleteFile(
                                         storedSecureNoteForPrivateGameFile.id,
                                         storedSecureNoteForPrivateGameFile
-                                          ?.metadata?.filename
+                                          ?.metadata?.filename,
                                       )
                                     }
                                     className="flex-shrink-0 p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition"
@@ -1377,7 +1418,7 @@ export function UserProfile({
                                   <button
                                     onClick={() =>
                                       decryptAndDownloadFile(
-                                        storedSecureNoteForPrivateGameFile
+                                        storedSecureNoteForPrivateGameFile,
                                       )
                                     }
                                     className="flex-shrink-0 p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition"
@@ -1389,7 +1430,7 @@ export function UserProfile({
                                     onClick={() => {
                                       setInSecureGameMode(true);
                                       decryptAndLoadFileToEdit(
-                                        storedSecureNoteForPrivateGameFile
+                                        storedSecureNoteForPrivateGameFile,
                                       );
                                     }}
                                     className={`flex-shrink-0 p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition ${
@@ -1485,7 +1526,7 @@ export function UserProfile({
                                         secureNoteEditModeFile
                                           ? "editing"
                                           : "creating"
-                                      } this note?`
+                                      } this note?`,
                                     ) == true
                                   ) {
                                     setNewSecureNoteSession(null);
@@ -1558,14 +1599,14 @@ export function UserProfile({
                                   };
 
                                   const formatSize = (
-                                    bytes?: number | null
+                                    bytes?: number | null,
                                   ) => {
                                     if (!bytes) return "—";
                                     if (bytes < 1024) return `${bytes}B`;
                                     if (bytes < 1024 * 1024)
                                       return `${(bytes / 1024).toFixed(1)}KB`;
                                     return `${(bytes / (1024 * 1024)).toFixed(
-                                      1
+                                      1,
                                     )}MB`;
                                   };
 
@@ -1594,7 +1635,7 @@ export function UserProfile({
                                         onClick={() =>
                                           handleDeleteFile(
                                             file.id,
-                                            fileMetadata.filename
+                                            fileMetadata.filename,
                                           )
                                         }
                                         className="flex-shrink-0 p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition"
@@ -1737,14 +1778,14 @@ export function UserProfile({
                                     });
                                   };
                                   const formatSize = (
-                                    bytes?: number | null
+                                    bytes?: number | null,
                                   ) => {
                                     if (!bytes) return "—";
                                     if (bytes < 1024) return `${bytes}B`;
                                     if (bytes < 1024 * 1024)
                                       return `${(bytes / 1024).toFixed(1)}KB`;
                                     return `${(bytes / (1024 * 1024)).toFixed(
-                                      1
+                                      1,
                                     )}MB`;
                                   };
 
@@ -1782,7 +1823,7 @@ export function UserProfile({
                                         onClick={() =>
                                           handleDeleteFile(
                                             file.id,
-                                            fileMetadata.filename
+                                            fileMetadata.filename,
                                           )
                                         }
                                         className="flex-shrink-0 p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition"
@@ -1819,10 +1860,10 @@ export function UserProfile({
           <Card className="mt-4 border-0 shadow-2xl bg-white/95 backdrop-blur-sm">
             <CardHeader className="px-4 sm:px-6">
               <div className="flex flex-col">
-              
                 <CardTitle className="text-xl sm:text-2xl font-bold text-gray-900">
-            <span className="text-blue-600">{">"}</span> Master Vault Password
-          </CardTitle>
+                  <span className="text-blue-600">{">"}</span> Master Vault
+                  Password
+                </CardTitle>
                 {vaultMode === "create" && (
                   <CardDescription className="text-gray-600 text-[10px]">
                     ⚠️ You need a master vault password that will help you

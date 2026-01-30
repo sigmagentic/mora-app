@@ -28,6 +28,7 @@ export interface GameQuestionAnswer {
   id: number;
   text: string;
   reasoning?: string;
+  index?: number;
 }
 
 export interface GameQuestion {
