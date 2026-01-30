@@ -8,11 +8,7 @@ import { NextRequest, NextResponse } from "next/server";
 export function validateManageApiKey(
   request: NextRequest,
 ): NextResponse | null {
-  console.log("validateManageApiKey route called");
-
   const key = process.env.MANAGE_API_KEY;
-
-  console.log("key ", key);
   if (!key) {
     console.error("MANAGE_API_KEY is not configured");
     return NextResponse.json(

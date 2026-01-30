@@ -607,6 +607,7 @@ export function UserProfile({
   const fetchStoredFiles = async () => {
     try {
       setFetchingStoredFiles(true);
+
       const res = await fetch(`/api/storage/get-storage`);
       // const res = await fetch(
       //   `/api/storage/get-storage?user_id=${encodeURIComponent(user.id)}`
@@ -880,13 +881,13 @@ export function UserProfile({
         console.error("Delete error:", body);
         toast.error(
           "Error",
-          "Failed to commit the PRF vault access. Please try again.",
+          "Failed to commit the purely biometric-powered encryption. Please try again.",
         );
         return;
       } else {
         toast.success(
           "Success",
-          "PRF vault access committed successfully. Next time you login, it will be used for password-less vault access.",
+          "Pure biometric-powered encryption enabled. Next time you login, it will take over and your password is only needed as a fallback!",
         );
 
         // lets get the latets auth status (which will have the PRF metadata and sync it with the UI)
@@ -909,6 +910,8 @@ export function UserProfile({
     } else {
       setInSecureGameMode(false);
     }
+
+    toast.success("Success", "Private data vault created successfully.");
   };
 
   // S: bespoke handlers
@@ -952,6 +955,7 @@ export function UserProfile({
   const test_handleAnswerChallengeGeneration = async (input: string) => {
     debugger;
     const [questionId, epochId, answerBit] = input.split(",");
+
     await handleAnswerChallengeGenerationAndCommitment(
       parseInt(questionId),
       epochId,
@@ -1021,7 +1025,10 @@ export function UserProfile({
       toast.success("Success", `You have earned ${body.xp_awarded} XP.`);
     }
 
-    toast.success("Success", "Answer commitment saved successfully.");
+    setTimeout(() => {
+      toast.success("Success", "Answer commitment saved successfully.");
+    }, 2000);
+
     return true;
   };
 
@@ -1063,7 +1070,7 @@ export function UserProfile({
                   <Button
                     size="icon"
                     variant="ghost"
-                    className="h-9 w-9 rounded-full shrink-0 text-green-600 hover:bg-green-50 hover:text-green-700"
+                    className="h-9 w-9 rounded-full shrink-0 text-gray-600 hover:bg-gray-50 hover:text-gray-700 animate-bounce"
                     onClick={handleCommitLazyPRFSupport}
                     disabled={committingPrfSupportToServer}
                     title="Commit pure-biometrics encryption support"
@@ -1077,8 +1084,8 @@ export function UserProfile({
                 )}
               </div>
             ) : (
-              <Card className="profile-card-expanded mt-4 border-0 bg-white w-full max-w-sm">
-                <CardHeader className="text-center pb-4 px-4 sm:px-6 relative">
+              <Card className="profile-card-expanded mt-4 border-0 bg-white w-full max-w-sm shadow-none">
+                <CardHeader className="text-center pb-4 px-4 sm:px-6 relative shadow-none">
                   <Button
                     size="icon"
                     variant="ghost"
@@ -1090,9 +1097,8 @@ export function UserProfile({
                     <ChevronUp className="h-4 w-4 block md:hidden" />
                   </Button>
                   <div className="flex flex-col items-center space-y-3 sm:space-y-4">
-                    <div>
+                    <div className="mt-2">
                       <CardTitle className="text-xl sm:text-2xl font-bold text-gray-900">
-                        <span className="text-blue-600">{">"}</span>{" "}
                         {user.username}
                       </CardTitle>
                     </div>
@@ -1103,7 +1109,7 @@ export function UserProfile({
                 </CardHeader>
 
                 <CardContent className="space-y-3 sm:space-y-4 px-4 sm:px-6">
-                  <div className="pt-3 sm:pt-4 border-t">
+                  <div className="pt-3 sm:pt-4">
                     <Button
                       onClick={handleLogout}
                       disabled={isLoggingOut}
@@ -1119,7 +1125,7 @@ export function UserProfile({
             )}
           </div>
 
-          <Card className="content-card mt-4 border-0 shadow-2xl backdrop-blur-sm w-full bgx-green-500">
+          <Card className="content-card mt-4 border-0 shadow-2xl backdrop-blur-sm w-full">
             <CardContent className="px-4 sm:px-6">
               <Tabs defaultValue="privacy-data-game" className="w-full mt-2">
                 <TabsList
@@ -1154,41 +1160,67 @@ export function UserProfile({
                   <Card className="mt-4">
                     <CardHeader className="px-4 sm:px-6">
                       <div className="flex flex-col">
-                        <CardTitle className="text-lg sm:text-xl font-semibold">
-                          let's play a game...
+                        <CardTitle className="text-sm">
+                          <span className="text-lg sm:text-xl font-semibold">
+                            let's play a morality game{" "}
+                          </span>
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <button
+                                type="button"
+                                className="!text-md hover:underline decoration-dotted cursor-help mt-2"
+                              >
+                                <span className="!text-md">
+                                  👁️ Tell me more...
+                                </span>
+                              </button>
+                            </PopoverTrigger>
+                            <PopoverContent className="max-w-sm text-xs text-gray-700">
+                              We will play a morality game to collect highly
+                              valuable &quot;morality judgement&quot; data that
+                              measures your moral compass over time. All data
+                              collected is stored with zero-knowledge privacy
+                              guarantees. NO ONE can see your data! ONLY 24
+                              questions asked per day. A new one unlocked each
+                              UTC hour.
+                            </PopoverContent>
+                          </Popover>
                         </CardTitle>
-                        <CardDescription className="text-gray-600 text-xs">
-                          ... to collect highly valuable &quot;human
-                          morality&quot; data that measures your moral compass
-                          over time. All data collected is stored with
-                          zero-knowledge privacy guarantees. NO ONE can see your
-                          data! ONLY 24 questions asked per day. A new one
-                          unlocked each UTC hour.
-                        </CardDescription>
                       </div>
                     </CardHeader>
 
                     <CardContent className="space-y-3 sm:space-y-4 px-4 sm:px-6 min-h-[300px]">
                       <div className="space-y-3">
-                        {storedSecureNoteForPrivateGameFile === null &&
+                        {!fetchingStoredFiles &&
+                          storedSecureNoteForPrivateGameFile === null &&
                           newSecureNoteSession === null && (
-                            <div className="flex flex-col items-center justify-between">
+                            <div className="flex flex-col items-center justify-between md:items-start">
                               <Button
                                 onClick={() => createNewSecureNote(true)}
                                 disabled={isUploading}
                                 variant="outline"
                                 className="h-10 sm:h-11 text-sm sm:text-base"
                               >
-                                Create Private Vault to Start Game
+                                Create Private Data Vault to Start Game
                               </Button>
-                              <p className="text-[10px] mt-2 text-center w-[80%]">
-                                A secure, privacy-preserving, zero-knowledge
-                                data storage vault is used to store your game
-                                data. NO ONE but you can access the data inside
-                                it.
+                              <p className="text-[10px] md:text-sm mt-2 text-center w-[80%] md:text-left md:w-full">
+                                Click the button above to create a dedicated,
+                                private, secure, privacy-preserving,
+                                zero-knowledge data storage vault is used to
+                                store your game data. NO ONE but you can access
+                                the data inside it.
                               </p>
                             </div>
                           )}
+
+                        {(!inSecureGameMode || fetchingStoredFiles) && (
+                          <div className="flex flex-col items-center justify-center py-12">
+                            <div className="h-8 w-8 animate-spin rounded-full border-2 border-gray-500 border-t-transparent" />
+                            <p className="mt-3 text-sm text-gray-500">
+                              Loading game data...
+                            </p>
+                          </div>
+                        )}
 
                         {inSecureGameMode && newSecureNoteSession !== null && (
                           <>
@@ -1264,7 +1296,7 @@ export function UserProfile({
                                   }}
                                   disabled={isUploading}
                                   variant="outline"
-                                  className={`w-full h-10 sm:h-11 text-sm sm:text-base border-green-200 text-green-600 hover:bg-green-50 hover:border-green-300 ${
+                                  className={`w-full h-10 sm:h-11 text-sm sm:text-base border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 ${
                                     isUploading
                                       ? "opacity-50 cursor-not-allowed"
                                       : ""
@@ -1440,8 +1472,7 @@ export function UserProfile({
             <CardHeader className="px-4 sm:px-6">
               <div className="flex flex-col">
                 <CardTitle className="text-xl font-bold text-gray-900">
-                  <span className="text-blue-600">{">"}</span> Master Vault
-                  Password
+                  Master Vault Password
                 </CardTitle>
                 {vaultMode === "create" && (
                   <CardDescription className="text-gray-600 text-[10px]">
@@ -1451,7 +1482,7 @@ export function UserProfile({
                           type="button"
                           className="hover:underline decoration-dotted cursor-help mt-2"
                         >
-                          ⚠️ What is this?
+                          ⚠️ What is this Master Vault Password?
                         </button>
                       </PopoverTrigger>
                       <PopoverContent className="max-w-sm text-xs text-gray-700">
@@ -1495,7 +1526,7 @@ export function UserProfile({
                         variant="outline"
                         className="w-full h-10 sm:h-11 text-sm sm:text-base"
                       >
-                        Create Vault Password
+                        Create Password
                       </Button>
                     </div>
                   </div>

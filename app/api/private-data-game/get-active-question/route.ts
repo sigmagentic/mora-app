@@ -8,6 +8,7 @@ import {
   getClosesAt,
   toTimestampStr,
 } from "@/lib/game-epoch";
+import { addNewQuestionAnswerSet } from "@/app/manage/dash/actions";
 
 export const runtime = "edge";
 
@@ -59,16 +60,16 @@ export async function GET(request: NextRequest) {
       const _isActiveHHDDMMYY = getEpochId(now); // HHDDMMYY, hour 1–24, month 1–12
 
       /*
-    Ultimate goal: ONLY EVER one ACTIVE question at a time with epoch_id === _isActiveHHDDMMYY.
+      Ultimate goal: ONLY EVER one ACTIVE question at a time with epoch_id === _isActiveHHDDMMYY.
 
-    Rules:
-    1. _isActiveHHDDMMYY = current LIVE epoch_id
-    2. At most TWO ACTIVE total (or zero on first play). Abort if >2 (corrupted).
-    3. UPCOMING: we need at least 1 UPCOMING only when we must promote (no ACTIVE with matching epoch). If none, error.
-    4. If one ACTIVE with epoch_id === _isActiveHHDDMMYY: use it, get answers, return. Close other ACTIVE (different epoch).
-    5. If none: get a UPCOMING, set game_status=ACTIVE, epoch_id, opens_at, closes_at (UTC hour). Close other ACTIVE (different epoch). Return.
-    6. If multiple ACTIVE with same epoch_id: corrupted; return 500.
-    */
+      Rules:
+      1. _isActiveHHDDMMYY = current LIVE epoch_id
+      2. At most TWO ACTIVE total (or zero on first play). Abort if >2 (corrupted).
+      3. UPCOMING: we need at least 1 UPCOMING only when we must promote (no ACTIVE with matching epoch). If none, error.
+      4. If one ACTIVE with epoch_id === _isActiveHHDDMMYY: use it, get answers, return. Close other ACTIVE (different epoch).
+      5. If none: get a UPCOMING, set game_status=ACTIVE, epoch_id, opens_at, closes_at (UTC hour). Close other ACTIVE (different epoch). Return.
+      6. If multiple ACTIVE with same epoch_id: corrupted; return 500.
+      */
 
       // Rule 2: at most 2 ACTIVE total (current + previous epoch) or 0. Abort if >2.
       const { data: activeQuestionsData, error: activeQuestionsError } =
@@ -154,14 +155,185 @@ export async function GET(request: NextRequest) {
             .limit(1)
             .single();
 
+        //// dormantError also throws if there are no rows, so we can't use it to detect DB fetch errors
+        // if (dormantError) {
+        //   console.error("Error fetching UPCOMING question:", dormantError);
+        //   return NextResponse.json(
+        //     { error: "E3 : No questions available" },
+        //     { status: 500 },
+        //   );
+        // }
+
+        /*
+        if there are no UPCOMING questions, then let's create a cyclic gameplay
+        ... let's get a random FINALIZED question 
+        ... make a copy of that and also get it's answers and make a copy of that
+        ... from the copies, remove the id, epoch_id, opens_at, closes_at and created_at from the question and set game_status to UPCOMING
+        ... and from the answers, remove the id and question_id
+        and in the end we should have something like this:
+        {
+            "title": "The Accidental Samaritan",
+            "img": "https://example.com/image.jpg",
+            "text": "Your question text here...",
+            "answers": [
+              { "text": "First answer" },
+              { "text": "Second answer" }
+            ]
+          }
+
+          lets just console.log the result of this for now so we can verify it's working
+        */
+
+        // if there are no UPCOMING questions, then let's create a cyclic gameplay as above...
         if (dormantError || !dormantQuestionData) {
+          console.log(
+            "NO UPCOMING QUESTIONS FOUND, CREATING A CYCLIC GAMEPLAY",
+          );
+
+          // Supabase .order() only accepts column names, not RANDOM(). Fetch FINALIZED and pick one in JS.
+          const {
+            data: finalizedQuestions,
+            error: randomPrevFinalizedQuestionError,
+          } = await supabase
+            .from("questions_repo")
+            .select("*")
+            .eq("game_status", "FINALIZED");
+
+          const randomPrevFinalizedQuestionData =
+            finalizedQuestions && finalizedQuestions.length > 0
+              ? [
+                  finalizedQuestions[
+                    Math.floor(Math.random() * finalizedQuestions.length)
+                  ],
+                ]
+              : [];
+
+          if (randomPrevFinalizedQuestionError) {
+            console.error(
+              "Error random prev finalized question:",
+              randomPrevFinalizedQuestionError,
+            );
+
+            return NextResponse.json(
+              { error: "E1 : No questions available" },
+              { status: 500 },
+            );
+          }
+
+          if (
+            randomPrevFinalizedQuestionData &&
+            randomPrevFinalizedQuestionData.length > 0
+          ) {
+            console.log(
+              "randomPrevFinalizedQuestionData >>>>",
+              randomPrevFinalizedQuestionData[0],
+            );
+          }
+
+          const { data: answersData, error: answersError } = await supabase
+            .from("question_answers")
+            .select("*")
+            .eq("question_id", randomPrevFinalizedQuestionData[0]?.id)
+            .order("id");
+
+          if (answersError) {
+            console.error("Error fetching answers:", answersError);
+          }
+
+          if (answersData && answersData.length > 0) {
+            console.log("answersData >>>>", answersData);
+          } else {
+            console.error(
+              "No answers found for the random previous finalized question",
+            );
+
+            return NextResponse.json(
+              { error: "E2 : No questions available" },
+              { status: 500 },
+            );
+          }
+
+          // clone and shuffle the answers for some randomness...
+          let clonedAndShuffledAnswers: any[] = answersData.map(
+            (answer: any) => ({
+              text: answer.text,
+            }),
+          );
+
+          // Unbiased shuffle for 2 answers: 50/50 swap or keep
+          if (clonedAndShuffledAnswers.length === 2 && Math.random() < 0.5) {
+            clonedAndShuffledAnswers.reverse();
+          }
+
+          const newQuestion = {
+            title: randomPrevFinalizedQuestionData[0]?.title,
+            img: randomPrevFinalizedQuestionData[0]?.img,
+            text: randomPrevFinalizedQuestionData[0]?.text,
+            answers: clonedAndShuffledAnswers,
+          };
+
+          console.log("newQuestion >>>>", newQuestion);
+
+          // can we call addNewQuestionAnswerSet to insert the new question and answers into the database?
+          const result = await addNewQuestionAnswerSet(
+            JSON.stringify(newQuestion),
+          );
+
+          if ("error" in result && result.error) {
+            console.error(
+              "Error adding new question and answers:",
+              result.error,
+            );
+
+            return NextResponse.json(
+              { error: "E4 : No questions available" },
+              { status: 500 },
+            );
+          }
+
+          if ("success" in result && result.success) {
+            console.log(
+              "New question and answers added successfully:",
+              result.questionId,
+            );
+
+            // OK, we can now
+            const { data: dormantQuestionData, error: dormantError } =
+              await supabase
+                .from("questions_repo")
+                .select("*")
+                .eq("game_status", "UPCOMING")
+                .order("created_at", { ascending: false }) // Get most recently added UPCOMING
+                .limit(1)
+                .single();
+
+            if (dormantError || !dormantQuestionData) {
+              console.error("Error fetching UPCOMING question:", dormantError);
+
+              return NextResponse.json(
+                { error: "E5 : No questions available" },
+                { status: 500 },
+              );
+            }
+
+            // this is the new question that we just added... and it becomes the ACTIVE question!
+            if (dormantQuestionData) {
+              activeQuestionData = dormantQuestionData;
+            }
+          }
+        } else {
+          // if there are UPCOMING questions, then let's use the most recently added one...
+          if (dormantQuestionData) {
+            activeQuestionData = dormantQuestionData;
+          }
+        }
+
+        if (!activeQuestionData) {
           return NextResponse.json(
-            { error: "No questions available" },
+            { error: "E6 : No questions available" },
             { status: 500 },
           );
         }
-
-        activeQuestionData = dormantQuestionData;
 
         // opens_at / closes_at: start and end of current UTC hour. DB type is timestamp (no TZ).
         // toTimestampStr yields "YYYY-MM-DD HH:mm:ss.sss" to store literal UTC.

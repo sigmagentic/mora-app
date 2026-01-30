@@ -59,7 +59,7 @@ export default function Home() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-white/90 via-white/80 to-white/70 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-600"></div>
       </div>
     );
   }
@@ -79,14 +79,13 @@ export default function Home() {
                   className=""
                 />
               </div>
-              <div className="bgx-yellow-500">
+              <div className="">
                 <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900">
                   {process.env.NEXT_PUBLIC_APP_TITLE || ""}
                 </h1>
               </div>
-              <div className="bgx-green-500 w-full">
+              <div className="w-full">
                 <p className="text-sm sm:text-base lg:text-lg xl:text-xl text-gray-600 leading-relaxed text-center md:text-left">
-                  <span className="text-blue-600">{">"}</span>{" "}
                   <span className="inline-block">
                     {process.env.NEXT_PUBLIC_APP_DESCRIPTION || ""}
                   </span>
@@ -109,7 +108,7 @@ export default function Home() {
             </div>
           ) : (
             <div className="grid md:grid-cols-2 gap-6 bgx-red-500">
-              <div className="bgx-blue-500 mt-20">
+              <div className="mt-20">
                 <div className="flex justify-center bg-white rounded-full p-[10px] w-fit mx-auto overflow-hidden">
                   <Image
                     src="/mora-cat-logo.png"
@@ -126,7 +125,6 @@ export default function Home() {
                   </h1>
                   <div className="max-w-2xl mx-auto space-y-1 sm:space-y-2">
                     <p className="text-sm sm:text-base lg:text-lg xl:text-xl text-gray-600 leading-relaxed">
-                      <span className="text-blue-600">{">"}</span>{" "}
                       <span className="inline-block">
                         {process.env.NEXT_PUBLIC_APP_DESCRIPTION || ""}
                       </span>
@@ -142,7 +140,7 @@ export default function Home() {
 
                 <AuthForm onAuthSuccess={handleAuthSuccess} />
               </div>
-              <div className="bgx-green-500">
+              <div className="">
                 <QuestionPreview />
               </div>
             </div>

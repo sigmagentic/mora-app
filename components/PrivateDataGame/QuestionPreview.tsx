@@ -49,7 +49,7 @@ export function QuestionPreview() {
     return (
       <Card className="border-0 shadow-2xl bg-white/95 backdrop-blur-sm h-full flex flex-col items-center justify-center">
         <CardContent className="flex flex-col items-center justify-center py-12 px-6">
-          <Loader2 className="w-6 h-6 animate-spin text-blue-600 mb-4" />
+          <Loader2 className="w-6 h-6 animate-spin text-gray-600 mb-4" />
           <p className="text-sm text-gray-600 text-center">
             Loading moral dilemma...
           </p>
@@ -63,7 +63,7 @@ export function QuestionPreview() {
     return (
       <Card className="border-0 shadow-2xl bg-white/95 backdrop-blur-sm h-full">
         <CardContent className="flex flex-col items-center justify-center py-12 px-6">
-          <Loader2 className="w-6 h-6 animate-spin text-blue-600 mb-4" />
+          <Loader2 className="w-6 h-6 animate-spin text-gray-600 mb-4" />
           <p className="text-sm text-gray-600 text-center">
             New morality questions are being loaded into the game, this make
             some time. But you can still login/register to play

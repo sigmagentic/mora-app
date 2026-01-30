@@ -416,7 +416,7 @@ export function AuthForm({ onAuthSuccess }: AuthFormProps) {
                       />
                     </div>
                     {capToken && (
-                      <p className="text-xs text-green-600 flex items-center gap-1 mt-1">
+                      <p className="text-xs text-gray-600 flex items-center gap-1 mt-1">
                         <Shield className="w-3 h-3" />
                         Human verification complete
                       </p>
@@ -427,7 +427,7 @@ export function AuthForm({ onAuthSuccess }: AuthFormProps) {
                 <Button
                   type="submit"
                   disabled={isLoading || (isCaptchaEnabled && !capToken)}
-                  className="w-full h-10 sm:h-11 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-medium transition-colors text-sm sm:text-base"
+                  className="w-full h-10 sm:h-11 bg-gray-600 hover:bg-gray-700 disabled:bg-gray-400 text-white font-medium transition-colors text-sm sm:text-base"
                 >
                   {isLoading ? (
                     <>
@@ -438,7 +438,7 @@ export function AuthForm({ onAuthSuccess }: AuthFormProps) {
                     </>
                   ) : (
                     <span className="text-xs sm:text-sm">
-                      Create with Biometric Passkey
+                      Register with Device Biometrics
                     </span>
                   )}
                 </Button>
@@ -473,7 +473,7 @@ export function AuthForm({ onAuthSuccess }: AuthFormProps) {
                 <Button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full h-10 sm:h-11 bg-green-600 hover:bg-green-700 text-white font-medium transition-colors text-sm sm:text-base"
+                  className="w-full h-10 sm:h-11 bg-gray-600 hover:bg-gray-700 text-white font-medium transition-colors text-sm sm:text-base"
                 >
                   {isLoading ? (
                     <>
@@ -484,7 +484,7 @@ export function AuthForm({ onAuthSuccess }: AuthFormProps) {
                     </>
                   ) : (
                     <span className="text-xs sm:text-sm">
-                      Login with Biometric Passkey
+                      Login with Device Biometrics
                     </span>
                   )}
                 </Button>

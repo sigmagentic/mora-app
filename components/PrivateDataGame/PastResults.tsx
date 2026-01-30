@@ -66,7 +66,7 @@ function ResultRow({ item }: { item: PastResultItem }) {
               <button
                 type="button"
                 onClick={() => setExpanded(!expanded)}
-                className="mt-1 inline-flex items-center gap-0.5 text-blue-600 hover:text-blue-700 font-medium text-xs"
+                className="mt-1 inline-flex items-center gap-0.5 text-gray-600 hover:text-gray-700 font-medium text-xs"
               >
                 {expanded ? (
                   <>
@@ -176,7 +176,7 @@ export function PastResults() {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-12">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-gray-500 border-t-transparent" />
         <p className="mt-3 text-sm text-gray-500">Loading past results…</p>
       </div>
     );
