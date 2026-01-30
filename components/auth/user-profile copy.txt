@@ -34,7 +34,6 @@ import {
   GameQuestionAnswer,
 } from "@/types/types";
 import { PrivateDataGame } from "../PrivateDataGame/PrivateDataGame";
-import { PastResults } from "../PrivateDataGame/PastResults";
 import {
   buildMoraResponsePayload,
   deriveMoraIdentitySecret,
@@ -51,7 +50,7 @@ interface UserProfileProps {
 
 let CACHED_VMK: CryptoKey | null = null;
 let BYPASS_VMK_UI_CHECKS = false;
-let BYPASS_HIDE_TABS = false;
+let BYPASS_HIDE_TABS = true;
 
 export function UserProfile({
   user,
@@ -1182,7 +1181,7 @@ export function UserProfile({
 
           <Card className="content-card mt-4 border-0 shadow-2xl bg-white/95 backdrop-blur-sm w-full">
             <CardContent className="px-4 sm:px-6">
-              <Tabs defaultValue="privacy-data-game" className="w-full mt-2">
+              <Tabs defaultValue="privacy-data-game" className="w-full">
                 <TabsList
                   className={`grid w-full grid-cols-3 mb-4 sm:mb-6 h-9 sm:h-10 ${
                     BYPASS_HIDE_TABS ? "hidden" : ""
@@ -1196,18 +1195,18 @@ export function UserProfile({
                     Game
                   </TabsTrigger>
                   <TabsTrigger
-                    value="past-results"
+                    value="secure-notes"
                     className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm"
                   >
                     <span className="text-xs">+</span>
-                    Past Results
+                    Secure Notes
                   </TabsTrigger>
                   <TabsTrigger
-                    value="predictions"
+                    value="private-images"
                     className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm"
                   >
                     <span className="text-xs">+</span>
-                    Predictions
+                    Private Images
                   </TabsTrigger>
                 </TabsList>
                 {/* Private Data Game */}
@@ -1458,27 +1457,398 @@ export function UserProfile({
                   </Card>
                 </TabsContent>
 
-                <TabsContent value="past-results">
-                  <Card className="mt-4 border-none">
-                    <CardHeader>
-                      <CardTitle>Past Results</CardTitle>
-                      <CardDescription className="text-gray-600 text-xs">
-                        Aggregated results from past questions (no individual answers are revealed).
-                      </CardDescription>
+                {/* Secure Note Storage */}
+                <TabsContent value="secure-notes">
+                  <Card className="mt-4">
+                    <CardHeader className="px-4 sm:px-6">
+                      <div className="flex flex-col">
+                        <CardTitle className="text-lg sm:text-xl font-semibold">
+                          Secure Note Storage
+                        </CardTitle>
+                        <CardDescription className="text-gray-600 text-xs">
+                          Encrypt, upload and store private text notes.
+                        </CardDescription>
+                      </div>
                     </CardHeader>
-                    <CardContent>
-                      <PastResults />
+
+                    <CardContent className="space-y-3 sm:space-y-4 px-4 sm:px-6">
+                      <div className="space-y-3">
+                        {newSecureNoteSession === null && (
+                          <div className="flex items-center justify-between">
+                            <Button
+                              onClick={() => createNewSecureNote()}
+                              disabled={isUploading}
+                              variant="outline"
+                              className="w-full h-10 sm:h-11 text-sm sm:text-base"
+                            >
+                              Create New Note
+                            </Button>
+                          </div>
+                        )}
+
+                        {newSecureNoteSession !== null && (
+                          <>
+                            <div className="p-2 sm:p-3 bg-gray-50 rounded-lg">
+                              <Textarea
+                                id="secure-note-textarea"
+                                value={newSecureNoteSession}
+                                onChange={(e) =>
+                                  setNewSecureNoteSession(e.target.value)
+                                }
+                                required
+                                disabled={isUploading}
+                                placeholder="Enter secure note here..."
+                                className="h-10 sm:h-11 text-sm sm:text-base"
+                              />
+                            </div>
+
+                            <div>
+                              <Input
+                                id="secure-note-filename"
+                                type="text"
+                                value={newSecureNoteFileLabel || ""}
+                                onChange={(e) =>
+                                  setNewSecureNoteFileLabel(e.target.value)
+                                }
+                                placeholder="Enter a label for this note (e.g. Financial Notes 2024)"
+                                required
+                                disabled={isUploading}
+                                className="h-10 sm:h-11 text-sm"
+                              />
+                            </div>
+
+                            <div className="pt-2 flex space-x-2">
+                              <Button
+                                onClick={() => {
+                                  if (
+                                    confirm(
+                                      `Are you sure you want to abort ${
+                                        secureNoteEditModeFile
+                                          ? "editing"
+                                          : "creating"
+                                      } this note?`,
+                                    ) == true
+                                  ) {
+                                    setNewSecureNoteSession(null);
+                                    setNewSecureNoteFileLabel(null);
+                                    setSecureNoteEditModeFile(null);
+                                  }
+                                }}
+                                disabled={isUploading}
+                                variant="outline"
+                                className={`w-full h-10 sm:h-11 text-sm sm:text-base ${
+                                  isUploading
+                                    ? "opacity-50 cursor-not-allowed"
+                                    : ""
+                                }`}
+                              >
+                                Cancel
+                              </Button>
+                              <Button
+                                onClick={() => {
+                                  encryptAndUpload(true);
+                                }}
+                                disabled={isUploading}
+                                variant="outline"
+                                className={`w-full h-10 sm:h-11 text-sm sm:text-base border-green-200 text-green-600 hover:bg-green-50 hover:border-green-300 ${
+                                  isUploading
+                                    ? "opacity-50 cursor-not-allowed"
+                                    : ""
+                                }`}
+                              >
+                                {isUploading
+                                  ? "Encrypting..."
+                                  : "Encrypt and Save"}
+                              </Button>
+                            </div>
+                          </>
+                        )}
+
+                        <div>
+                          {fetchingStoredFiles && (
+                            <div className="flex flex-col items-center space-x-2">
+                              <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 mr-2 animate-spin" />
+                              <span className="text-xs">
+                                Loading stored files...
+                              </span>
+                            </div>
+                          )}
+                          {storedSecureNoteFiles.length > 0 && (
+                            <div className="pt-4 border-t">
+                              <p className="text-xs sm:text-sm font-medium text-gray-700 mb-3">
+                                Stored Files ({storedSecureNoteFiles.length})
+                              </p>
+                              <div className="space-y-2">
+                                {storedSecureNoteFiles.map((file) => {
+                                  const fileMetadata =
+                                    typeof file.metadata === "string"
+                                      ? JSON.parse(file.metadata)
+                                      : file.metadata;
+
+                                  const formatDate = (dateStr: string) => {
+                                    const d = new Date(dateStr);
+                                    return d.toLocaleDateString("en-US", {
+                                      month: "short",
+                                      day: "numeric",
+                                      year:
+                                        d.getFullYear() !==
+                                        new Date().getFullYear()
+                                          ? "numeric"
+                                          : undefined,
+                                    });
+                                  };
+
+                                  const formatSize = (
+                                    bytes?: number | null,
+                                  ) => {
+                                    if (!bytes) return "—";
+                                    if (bytes < 1024) return `${bytes}B`;
+                                    if (bytes < 1024 * 1024)
+                                      return `${(bytes / 1024).toFixed(1)}KB`;
+                                    return `${(bytes / (1024 * 1024)).toFixed(
+                                      1,
+                                    )}MB`;
+                                  };
+
+                                  return (
+                                    <div
+                                      key={file.id}
+                                      className="flex items-center space-x-3 p-2 sm:p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
+                                    >
+                                      <div className="min-w-0 flex-1">
+                                        <p className="text-xs font-medium text-gray-500 truncate">
+                                          {fileMetadata.fileLabel}
+                                        </p>
+                                        <p className="text-[10px] font-medium text-gray-900 truncate">
+                                          {fileMetadata.filename}
+                                        </p>
+                                        <div className="flex items-center space-x-2 text-xs text-gray-500">
+                                          <span>{formatSize(file.size)}</span>
+                                          <span>•</span>
+                                          <span>
+                                            {formatDate(file.created_at)}
+                                          </span>
+                                        </div>
+                                      </div>
+
+                                      <button
+                                        onClick={() =>
+                                          handleDeleteFile(
+                                            file.id,
+                                            fileMetadata.filename,
+                                          )
+                                        }
+                                        className="flex-shrink-0 p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition"
+                                        title="Delete file"
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </button>
+                                      <button
+                                        onClick={() =>
+                                          decryptAndDownloadFile(file)
+                                        }
+                                        className="flex-shrink-0 p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition"
+                                        title="Decrypt & Download file"
+                                      >
+                                        <Download className="w-4 h-4" />
+                                      </button>
+                                      <button
+                                        onClick={() =>
+                                          decryptAndLoadFileToEdit(file)
+                                        }
+                                        className={`flex-shrink-0 p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition ${
+                                          isUploading ||
+                                          newSecureNoteSession !== null
+                                            ? "opacity-50 cursor-not-allowed"
+                                            : ""
+                                        }`}
+                                        title="Edit Note"
+                                        disabled={
+                                          isUploading ||
+                                          newSecureNoteSession !== null
+                                        }
+                                      >
+                                        <Edit className="w-4 h-4" />
+                                      </button>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </CardContent>
                   </Card>
                 </TabsContent>
 
-                <TabsContent value="predictions">
-                  <Card className="mt-4 border-none">
-                    <CardHeader>
-                      {" "}
-                      <CardTitle>Predictions</CardTitle>{" "}
+                {/* Private Image Storage */}
+                <TabsContent value="private-images">
+                  <Card className="mt-4">
+                    <CardHeader className="px-4 sm:px-6">
+                      <div className="flex flex-col">
+                        <CardTitle className="text-lg sm:text-xl font-semibold">
+                          Secure Image Storage
+                        </CardTitle>
+                        <CardDescription className="text-gray-600 text-xs">
+                          Encrypt, upload and store any image.
+                        </CardDescription>
+                      </div>
                     </CardHeader>
-                    <CardContent>Coming soon...</CardContent>
+
+                    <CardContent className="space-y-3 sm:space-y-4 px-4 sm:px-6">
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs sm:text-sm font-medium text-gray-700">
+                            Upload new file
+                          </p>
+                        </div>
+
+                        <div className="p-2 sm:p-3 bg-gray-50 rounded-lg">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleFileChange}
+                            className="text-xs sm:text-sm"
+                          />
+                        </div>
+
+                        {previewUrl && (
+                          <div className="p-2 sm:p-3 bg-gray-50 rounded-lg">
+                            <p className="text-xs sm:text-sm font-medium text-gray-700 mb-2">
+                              Preview
+                            </p>
+                            <div className="w-40 h-40 rounded-md overflow-hidden border">
+                              <img
+                                src={previewUrl}
+                                alt="preview"
+                                className="object-cover w-full h-full"
+                              />
+                            </div>
+                            <p className="text-xs text-gray-500 mt-2 truncate">
+                              {selectedPrivateFile?.name}
+                            </p>
+                          </div>
+                        )}
+
+                        <div className="pt-2">
+                          <Button
+                            onClick={() => encryptAndUpload(false)}
+                            disabled={!selectedPrivateFile || isUploading}
+                            variant="outline"
+                            className="w-full h-10 sm:h-11 text-sm sm:text-base"
+                          >
+                            {isUploading
+                              ? "Encrypting..."
+                              : "Encrypt and Upload"}
+                          </Button>
+                        </div>
+
+                        <div>
+                          {fetchingStoredFiles && (
+                            <div className="flex flex-col items-center space-x-2">
+                              <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 mr-2 animate-spin" />
+                              <span className="text-xs">
+                                Loading stored files...
+                              </span>
+                            </div>
+                          )}
+                          {storedPrivateFiles.length > 0 && (
+                            <div className="pt-4 border-t">
+                              <p className="text-xs sm:text-sm font-medium text-gray-700 mb-3">
+                                Stored Files ({storedPrivateFiles.length})
+                              </p>
+                              <div className="space-y-2">
+                                {storedPrivateFiles.map((file) => {
+                                  const fileMetadata =
+                                    typeof file.metadata === "string"
+                                      ? JSON.parse(file.metadata)
+                                      : file.metadata;
+
+                                  const formatDate = (dateStr: string) => {
+                                    const d = new Date(dateStr);
+                                    return d.toLocaleDateString("en-US", {
+                                      month: "short",
+                                      day: "numeric",
+                                      year:
+                                        d.getFullYear() !==
+                                        new Date().getFullYear()
+                                          ? "numeric"
+                                          : undefined,
+                                    });
+                                  };
+                                  const formatSize = (
+                                    bytes?: number | null,
+                                  ) => {
+                                    if (!bytes) return "—";
+                                    if (bytes < 1024) return `${bytes}B`;
+                                    if (bytes < 1024 * 1024)
+                                      return `${(bytes / 1024).toFixed(1)}KB`;
+                                    return `${(bytes / (1024 * 1024)).toFixed(
+                                      1,
+                                    )}MB`;
+                                  };
+
+                                  return (
+                                    <div
+                                      key={file.id}
+                                      className="flex items-center space-x-3 p-2 sm:p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition"
+                                    >
+                                      {/* <div className="w-10 h-10 flex-shrink-0 rounded border overflow-hidden bg-gray-200">
+                          <img
+                            src={imgUrl}
+                            alt={fileMetadata.filename}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display =
+                                "none";
+                            }}
+                          />
+                        </div> */}
+
+                                      <div className="min-w-0 flex-1">
+                                        <p className="text-xs sm:text-sm font-medium text-gray-900 truncate">
+                                          {fileMetadata.filename}
+                                        </p>
+                                        <div className="flex items-center space-x-2 text-xs text-gray-500">
+                                          <span>{formatSize(file.size)}</span>
+                                          <span>•</span>
+                                          <span>
+                                            {formatDate(file.created_at)}
+                                          </span>
+                                        </div>
+                                      </div>
+
+                                      <button
+                                        onClick={() =>
+                                          handleDeleteFile(
+                                            file.id,
+                                            fileMetadata.filename,
+                                          )
+                                        }
+                                        className="flex-shrink-0 p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition"
+                                        title="Delete file"
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </button>
+                                      <button
+                                        onClick={() =>
+                                          decryptAndDownloadFile(file)
+                                        }
+                                        className="flex-shrink-0 p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition"
+                                        title="Decrypt & Download file"
+                                      >
+                                        <Download className="w-4 h-4" />
+                                      </button>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
                   </Card>
                 </TabsContent>
               </Tabs>

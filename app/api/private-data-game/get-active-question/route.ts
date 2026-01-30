@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
         await supabase
           .from("questions_repo")
           .select("*")
-          .eq("game_status", "AGGREGATING")
+          .in("game_status", ["AGGREGATING", "ACTIVE", "FINALIZED"])
           .order("closes_at", { ascending: false })
           .limit(1);
 
