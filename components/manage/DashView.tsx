@@ -22,12 +22,19 @@ import type {
   AddNewResult,
   CommitmentsByEpochResult,
   ConfirmAggregateResult,
+  GenerateInviteCodesResult,
 } from "@/app/manage/dash/actions";
 import { Textarea } from "@/components/ui/textarea";
 
 const MAX_CELL_LENGTH = 40;
 
-const DISPLAY_SECTIONS = ["questions_repo", "response_commitments", "users", "question_aggregates"] as const;
+const DISPLAY_SECTIONS = [
+  "questions_repo",
+  "response_commitments",
+  "users",
+  "question_aggregates",
+  "invite_codes",
+] as const;
 
 function truncate(val: unknown): string {
   if (val == null) return "—";
@@ -51,8 +58,11 @@ type DashViewProps = {
   onRefreshSection: (sections?: string) => Promise<DashDataResult>;
   onResetQuestionGameMeta: () => Promise<ResetResult>;
   onAddNewQuestionAnswerSet: (bodyJson: string) => Promise<AddNewResult>;
-  onGetCommitmentsByEpoch: (epochId: string) => Promise<CommitmentsByEpochResult>;
+  onGetCommitmentsByEpoch: (
+    epochId: string
+  ) => Promise<CommitmentsByEpochResult>;
   onConfirmAggregate: (epochId: string) => Promise<ConfirmAggregateResult>;
+  onGenerateInviteCodes: () => Promise<GenerateInviteCodesResult>;
 };
 
 const ADD_NEW_SAMPLE = `{
@@ -72,8 +82,10 @@ export function DashView({
   onAddNewQuestionAnswerSet,
   onGetCommitmentsByEpoch,
   onConfirmAggregate,
+  onGenerateInviteCodes,
 }: DashViewProps) {
-  const [dataSections, setDataSections] = useState<Record<string, unknown[]>>(initialDataSections);
+  const [dataSections, setDataSections] =
+    useState<Record<string, unknown[]>>(initialDataSections);
   const [actionInProgress, setActionInProgress] = useState(false);
   const [aggregateConfirming, setAggregateConfirming] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<{
@@ -84,11 +96,35 @@ export function DashView({
   const [addNewJson, setAddNewJson] = useState(ADD_NEW_SAMPLE);
   const [aggregateOpen, setAggregateOpen] = useState(false);
   const [aggregateEpochId, setAggregateEpochId] = useState<string | null>(null);
-  const [aggregateData, setAggregateData] = useState<{
-    commitments: Record<string, unknown>[];
-    count: number;
-  } | { error: string } | null>(null);
+  const [aggregateData, setAggregateData] = useState<
+    | {
+        commitments: Record<string, unknown>[];
+        count: number;
+      }
+    | { error: string }
+    | null
+  >(null);
   const [aggregateLoading, setAggregateLoading] = useState(false);
+  const [generateCodesInProgress, setGenerateCodesInProgress] = useState(false);
+
+  const handleGenerateInviteCodes = useCallback(async () => {
+    setGenerateCodesInProgress(true);
+    try {
+      const result = await onGenerateInviteCodes();
+      if ("error" in result) {
+        showError(result.error);
+        return;
+      }
+      const refreshResult = await onRefreshSection("invite_codes");
+      if ("error" in refreshResult) {
+        showError(refreshResult.error);
+        return;
+      }
+      setDataSections((prev) => ({ ...prev, ...refreshResult.data_sections }));
+    } finally {
+      setGenerateCodesInProgress(false);
+    }
+  }, [onGenerateInviteCodes, onRefreshSection]);
 
   useEffect(() => {
     if (!aggregateOpen || !aggregateEpochId) return;
@@ -228,6 +264,16 @@ export function DashView({
                     </Button>
                   </>
                 )}
+                {sectionKey === "invite_codes" && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleGenerateInviteCodes()}
+                    disabled={actionInProgress || generateCodesInProgress}
+                  >
+                    {generateCodesInProgress ? "Generating…" : "Generate 25"}
+                  </Button>
+                )}
               </div>
               <p className="text-muted-foreground">No rows</p>
             </section>
@@ -274,6 +320,16 @@ export function DashView({
                     Add New
                   </Button>
                 </>
+              )}
+              {sectionKey === "invite_codes" && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleGenerateInviteCodes()}
+                  disabled={actionInProgress || generateCodesInProgress}
+                >
+                  {generateCodesInProgress ? "Generating…" : "Generate 25"}
+                </Button>
               )}
             </div>
             <div className="h-[280px] overflow-auto rounded-md border">
@@ -366,7 +422,8 @@ export function DashView({
                 "id" in selectedRecord.record && (
                   <>
                     <p className="mt-4 text-sm font-medium text-muted-foreground">
-                      question_answers (question_id = {String(selectedRecord.record.id)})
+                      question_answers (question_id ={" "}
+                      {String(selectedRecord.record.id)})
                     </p>
                     <pre className="mt-1 text-xs whitespace-pre-wrap break-all">
                       {JSON.stringify(
@@ -392,7 +449,8 @@ export function DashView({
             <DialogTitle>Add new question and answers</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            Paste JSON with title, img (optional), text, and answers (array of {"{ text }"}).
+            Paste JSON with title, img (optional), text, and answers (array of{" "}
+            {"{ text }"}).
           </p>
           <Textarea
             className="min-h-[200px] font-mono text-xs"
@@ -499,12 +557,12 @@ export function DashView({
               )}
             </>
           )}
-          {(aggregateConfirming && (
+          {aggregateConfirming && (
             <div className="flex items-center gap-2 py-2 text-sm text-muted-foreground">
               <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
               Aggregating…
             </div>
-          ))}
+          )}
           <div className="flex justify-end gap-2 pt-4">
             <Button
               variant="outline"

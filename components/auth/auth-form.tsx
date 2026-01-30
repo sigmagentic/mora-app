@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import {
   startRegistration,
   startAuthentication,
@@ -15,6 +15,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Key, UserPlus, LogIn, Shield } from "lucide-react";
@@ -42,10 +48,14 @@ export function AuthForm({ onAuthSuccess }: AuthFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [username, setUsername] = useState("");
+  const [inviteCode, setInviteCode] = useState("");
   const [email, setEmail] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [capToken, setCapToken] = useState("");
   const capWidgetRef = useRef<any>(null);
+  const [inviteCodesModalOpen, setInviteCodesModalOpen] = useState(false);
+  const [availableCodes, setAvailableCodes] = useState<string[] | null>(null);
+  const [inviteCodesLoading, setInviteCodesLoading] = useState(false);
 
   // Check if CAPTCHA is enabled
   const isCaptchaEnabled =
@@ -112,10 +122,34 @@ export function AuthForm({ onAuthSuccess }: AuthFormProps) {
     };
   }, [isCaptchaEnabled]);
 
+  const openInviteCodesModal = useCallback(async () => {
+    setInviteCodesModalOpen(true);
+    setAvailableCodes(null);
+    setInviteCodesLoading(true);
+    try {
+      const res = await fetch("/api/auth/invite-codes");
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && Array.isArray(data.codes)) {
+        setAvailableCodes(data.codes);
+      } else {
+        setAvailableCodes([]);
+      }
+    } catch {
+      setAvailableCodes([]);
+    } finally {
+      setInviteCodesLoading(false);
+    }
+  }, []);
+
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!username.trim()) {
       setError("Username is required");
+      return;
+    }
+
+    if (!inviteCode.trim()) {
+      setError("Invite code is required");
       return;
     }
 
@@ -136,6 +170,7 @@ export function AuthForm({ onAuthSuccess }: AuthFormProps) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           username: username.trim(),
+          inviteCode: inviteCode.trim(),
           capToken,
         }),
       });
@@ -159,6 +194,7 @@ export function AuthForm({ onAuthSuccess }: AuthFormProps) {
           // expectedChallenge: beginData.options.challenge,
           expectedChallenge: beginData.challenge,
           username: username.trim(),
+          inviteCode: inviteCode.trim(),
           tempUserId: beginData.tempUserId,
           email: email.trim() || undefined,
           displayName: displayName.trim() || undefined,
@@ -236,7 +272,7 @@ export function AuthForm({ onAuthSuccess }: AuthFormProps) {
         } catch (error) {
           console.error(
             "Error obtaining PRF result from authenticator:",
-            error,
+            error
           );
           prfResult = null;
         }
@@ -334,6 +370,61 @@ export function AuthForm({ onAuthSuccess }: AuthFormProps) {
                     className="h-10 sm:h-11 text-sm sm:text-base"
                   />
                 </div>
+
+                <div className="space-y-1 sm:space-y-2">
+                  <Label
+                    htmlFor="invite-code"
+                    className="text-xs sm:text-sm font-medium text-gray-700"
+                  >
+                    invite code: <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="invite-code"
+                    type="text"
+                    value={inviteCode}
+                    onChange={(e) => setInviteCode(e.target.value)}
+                    placeholder="INVITE_CODE"
+                    required
+                    className="h-10 sm:h-11 text-sm sm:text-base"
+                  />
+                  <button
+                    type="button"
+                    onClick={openInviteCodesModal}
+                    className="text-xs text-gray-600 hover:text-gray-900 underline focus:outline-none focus:ring-0"
+                  >
+                    get an invite code
+                  </button>
+                </div>
+
+                <Dialog open={inviteCodesModalOpen} onOpenChange={setInviteCodesModalOpen}>
+                  <DialogContent className="max-w-sm">
+                    <DialogHeader>
+                      <DialogTitle>Available invite codes</DialogTitle>
+                    </DialogHeader>
+                    {inviteCodesLoading ? (
+                      <p className="text-sm text-muted-foreground">Loading…</p>
+                    ) : availableCodes === null ? null : availableCodes.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">
+                        Sorry, no invites available at the moment. Try again later or follow our socials for when codes drop.
+                      </p>
+                    ) : (
+                      <ul className="text-sm space-y-1 max-h-[200px] overflow-y-auto">
+                        {availableCodes.map((code) => (
+                          <li
+                            key={code}
+                            className="font-mono cursor-pointer hover:bg-muted rounded px-2 py-1"
+                            onClick={() => {
+                              setInviteCode(code);
+                              setInviteCodesModalOpen(false);
+                            }}
+                          >
+                            {code}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </DialogContent>
+                </Dialog>
 
                 {/* <div className="space-y-1 sm:space-y-2">
                   <Label

@@ -9,12 +9,39 @@ import { validateCapToken } from "@/lib/cap-utils";
 
 export async function POST(request: NextRequest) {
   try {
-    const { username, capToken } = await request.json();
+    const { username, capToken, inviteCode } = await request.json();
 
     if (!username || typeof username !== "string") {
       return NextResponse.json(
         { error: "Username is required" },
-        { status: 400 },
+        { status: 400 }
+      );
+    }
+
+    if (!inviteCode || typeof inviteCode !== "string") {
+      return NextResponse.json(
+        { error: "Invite code is required" },
+        { status: 400 }
+      );
+    }
+
+    // Validate invite code: must exist and be available (used = 0)
+    const { data: inviteRow, error: inviteError } = await supabase
+      .from("invite_codes")
+      .select("id, used")
+      .eq("code", inviteCode.trim())
+      .single();
+
+    if (inviteError || !inviteRow) {
+      return NextResponse.json(
+        { error: "Invalid or unknown invite code" },
+        { status: 400 }
+      );
+    }
+    if (inviteRow.used !== 0) {
+      return NextResponse.json(
+        { error: "This invite code has already been used" },
+        { status: 400 }
       );
     }
 
@@ -27,7 +54,7 @@ export async function POST(request: NextRequest) {
       if (!capToken) {
         return NextResponse.json(
           { error: "CAPTCHA verification required" },
-          { status: 400 },
+          { status: 400 }
         );
       }
 
@@ -38,7 +65,7 @@ export async function POST(request: NextRequest) {
       if (!isValidCap) {
         return NextResponse.json(
           { error: "Invalid or expired CAPTCHA token" },
-          { status: 400 },
+          { status: 400 }
         );
       }
     } else {
@@ -55,7 +82,7 @@ export async function POST(request: NextRequest) {
     if (existingUser) {
       return NextResponse.json(
         { error: "Username already exists" },
-        { status: 409 },
+        { status: 409 }
       );
     }
 
@@ -64,7 +91,7 @@ export async function POST(request: NextRequest) {
 
     // Generate registration options
     const options = await generateRegistrationOptions(
-      generateRegistrationOptionsConfig(username, tempUserId),
+      generateRegistrationOptionsConfig(username, tempUserId)
     );
 
     // Store the challenge in memory (in production, use Redis or database)
@@ -77,7 +104,7 @@ export async function POST(request: NextRequest) {
     console.error("Registration begin error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

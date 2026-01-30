@@ -15,12 +15,19 @@ export async function POST(request: NextRequest) {
       tempUserId,
       email,
       displayName,
+      inviteCode,
     } = await request.json();
 
-    if (!credential || !expectedChallenge || !username || !tempUserId) {
+    if (
+      !credential ||
+      !expectedChallenge ||
+      !username ||
+      !tempUserId ||
+      !inviteCode
+    ) {
       return NextResponse.json(
         { error: "Missing required fields" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -39,8 +46,8 @@ export async function POST(request: NextRequest) {
       // Parse the clientDataJSON to get the actual origin
       const clientDataJSON = JSON.parse(
         Buffer.from(credential.response.clientDataJSON, "base64url").toString(
-          "utf-8",
-        ),
+          "utf-8"
+        )
       );
       const credentialOrigin = clientDataJSON.origin;
 
@@ -62,18 +69,18 @@ export async function POST(request: NextRequest) {
               "Invalid registration origin - not a subdomain of RP ID:",
               originHost,
               "vs",
-              rpID,
+              rpID
             );
             return NextResponse.json(
               { error: "Invalid origin for this RP ID" },
-              { status: 400 },
+              { status: 400 }
             );
           }
         } catch (urlError) {
           console.error("Invalid registration origin URL:", credentialOrigin);
           return NextResponse.json(
             { error: "Invalid origin format" },
-            { status: 400 },
+            { status: 400 }
           );
         }
       }
@@ -85,13 +92,13 @@ export async function POST(request: NextRequest) {
     const verifyConfig = createVerifyRegistrationConfig(
       expectedChallenge,
       actualOrigin,
-      rpID,
+      rpID
     );
     const verification = await verifyRegistrationResponse(
       verifyConfig({
         response: credential,
         requireUserVerification,
-      }),
+      })
     );
 
     // console.log('Full verification object:', JSON.stringify(verification, null, 2));
@@ -99,7 +106,7 @@ export async function POST(request: NextRequest) {
     if (!verification.verified) {
       return NextResponse.json(
         { error: "Registration verification failed" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -109,7 +116,7 @@ export async function POST(request: NextRequest) {
       console.error("registrationInfo is missing from verification object");
       return NextResponse.json(
         { error: "Registration info missing" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -129,7 +136,7 @@ export async function POST(request: NextRequest) {
       console.error("Full error object:", JSON.stringify(userError, null, 2));
       return NextResponse.json(
         { error: "Failed to create user" },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -140,7 +147,7 @@ export async function POST(request: NextRequest) {
         user_id: user.id,
         credential_id: credential.id,
         credential_public_key: Buffer.from(
-          registrationInfo.credential.publicKey.buffer,
+          registrationInfo.credential.publicKey.buffer
         ),
         counter: registrationInfo.credential.counter,
         credential_device_type: registrationInfo.credentialDeviceType,
@@ -154,13 +161,13 @@ export async function POST(request: NextRequest) {
       console.error("Supabase credential storage error:", credError);
       console.error(
         "Full credential error object:",
-        JSON.stringify(credError, null, 2),
+        JSON.stringify(credError, null, 2)
       );
       // Clean up user if credential creation fails
       await supabase.from("users").delete().eq("id", user.id);
       return NextResponse.json(
         { error: "Failed to store credential" },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -188,12 +195,20 @@ export async function POST(request: NextRequest) {
       maxAge: 60 * 60 * 24 * 7, // 7 days
     });
 
+    // Mark invite code as used (1) so it cannot be reused
+    if (inviteCode && typeof inviteCode === "string") {
+      await supabase
+        .from("invite_codes")
+        .update({ used: 1 })
+        .eq("code", inviteCode.trim());
+    }
+
     return response;
   } catch (error) {
     console.error("Registration complete error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

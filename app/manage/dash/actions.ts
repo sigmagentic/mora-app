@@ -18,6 +18,10 @@ export type CommitmentsByEpochResult =
 
 export type ConfirmAggregateResult = { success: true } | { error: string };
 
+export type GenerateInviteCodesResult =
+  | { success: true; count: number; codes: string[] }
+  | { error: string };
+
 async function getBaseUrl(): Promise<string> {
   const headersList = await headers();
   const host = headersList.get("host") ?? "localhost:3000";
@@ -139,6 +143,36 @@ export async function confirmAggregate(
     return { success: true };
   } catch (e) {
     return { error: e instanceof Error ? e.message : "Failed to fetch" };
+  }
+}
+
+export async function generateInviteCodes(): Promise<GenerateInviteCodesResult> {
+  const apiKey = process.env.MANAGE_API_KEY;
+  if (!apiKey) {
+    return { error: "MANAGE_API_KEY is not configured" };
+  }
+
+  const base = await getBaseUrl();
+  const url = `${base}/api/private-data-game/manage/generate-invite-codes`;
+
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "x-api-key": apiKey, "Content-Type": "application/json" },
+      body: "{}",
+      cache: "no-store",
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      return { error: (body.error as string) || res.statusText };
+    }
+    return {
+      success: true,
+      count: (body.count as number) ?? 0,
+      codes: (body.codes as string[]) ?? [],
+    };
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : "Failed to generate" };
   }
 }
 

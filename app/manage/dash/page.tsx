@@ -6,6 +6,7 @@ import {
   addNewQuestionAnswerSet,
   getCommitmentsByEpoch,
   confirmAggregate,
+  generateInviteCodes,
 } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -59,6 +60,7 @@ export default async function ManageDashPage() {
           onAddNewQuestionAnswerSet={addNewQuestionAnswerSet}
           onGetCommitmentsByEpoch={getCommitmentsByEpoch}
           onConfirmAggregate={confirmAggregate}
+          onGenerateInviteCodes={generateInviteCodes}
         />
       )}
     </div>

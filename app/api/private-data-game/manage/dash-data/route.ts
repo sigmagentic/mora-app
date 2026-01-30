@@ -5,7 +5,7 @@ import { validateManageApiKey } from "@/lib/manage-api-auth";
 export const runtime = "edge";
 
 const LIMIT = 50;
-const ALL_SECTIONS = ["questions_repo", "response_commitments", "users", "question_aggregates"] as const;
+const ALL_SECTIONS = ["questions_repo", "response_commitments", "users", "question_aggregates", "invite_codes"] as const;
 
 /**
  * GET /api/private-data-game/manage/dash-data
@@ -119,6 +119,22 @@ export async function GET(request: NextRequest) {
         );
       }
       data_sections.question_aggregates = aggregatesRes.data ?? [];
+    }
+
+    if (requested.has("invite_codes")) {
+      const inviteRes = await supabase
+        .from("invite_codes")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .limit(LIMIT);
+
+      if (inviteRes.error) {
+        return NextResponse.json(
+          { error: "Fetch failed", details: [`invite_codes: ${inviteRes.error.message}`] },
+          { status: 500 }
+        );
+      }
+      data_sections.invite_codes = inviteRes.data ?? [];
     }
 
     return NextResponse.json({ data_sections });
