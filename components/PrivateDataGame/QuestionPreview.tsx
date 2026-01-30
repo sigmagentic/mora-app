@@ -79,17 +79,22 @@ export function QuestionPreview() {
   }
 
   return (
-    <Card className="border-0 shadow-2xl bg-white/95 backdrop-blur-sm h-full">
-      <CardHeader className="text-center pb-2 px-4 sm:px-6"></CardHeader>
-      <CardContent className="px-4 sm:px-6 pb-6">
-        <QuestionDisplay question={question} disabled={true} showTitle={true} />
-        <div className="mt-6 pt-6 border-t border-gray-200">
-          <p className="text-center text-sm font-medium text-gray-700">
-            What would you do? login/register and privately share your moral
-            judgement...
-          </p>
-        </div>
-      </CardContent>
-    </Card>
+    <div className="w-full max-w-md mx-auto px-4 sm:px-0">
+      <Card className="border-0 shadow-2xl bg-white/95 backdrop-blur-sm">
+        <CardContent className="pt-4 px-4 sm:px-6">
+          <QuestionDisplay
+            question={question}
+            disabled={true}
+            showTitle={true}
+          />
+          <div className="mt-6 pt-6 border-t border-gray-200">
+            <p className="text-center text-sm font-medium text-gray-700">
+              What would you do? login/register and privately share your moral
+              judgement...
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

@@ -267,8 +267,8 @@ export function PrivateDataGame({
               <div className="text-lg font-bold">{hour}</div>
               {isPast && (
                 <div
-                  className={`text-xs ${
-                    isPlayed ? "text-green-500" : "text-red-500"
+                  className={`text-[9px] md:text-xs ${
+                    isPlayed ? "text-green-800" : "text-red-500"
                   }`}
                 >
                   {isPlayed ? "Played!" : "Missed"}

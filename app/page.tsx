@@ -69,7 +69,7 @@ export default function Home() {
       <div className="flex-1 flex flex-col justify-top px-4 py-6 sm:py-8 lg:py-6">
         <div className="container mx-auto h-full max-w-6xl">
           {user && (
-            <div className="bgx-red-500 flex flex-row items-center justify-center gap-4 pb-2">
+            <div className="bgx-red-500 flex md:flex-row flex-col items-center justify-center md:gap-4 pb-2">
               <div className="flex justify-center bg-white rounded-full p-[10px] w-fit mx-auto overflow-hidden">
                 <Image
                   src="/mora-cat-logo.png"
@@ -84,14 +84,14 @@ export default function Home() {
                   {process.env.NEXT_PUBLIC_APP_TITLE || ""}
                 </h1>
               </div>
-              <div className="bgx-green-500 w-full ">
-                <p className="text-sm sm:text-base lg:text-lg xl:text-xl text-gray-600 leading-relaxed">
+              <div className="bgx-green-500 w-full">
+                <p className="text-sm sm:text-base lg:text-lg xl:text-xl text-gray-600 leading-relaxed text-center md:text-left">
                   <span className="text-blue-600">{">"}</span>{" "}
                   <span className="inline-block">
                     {process.env.NEXT_PUBLIC_APP_DESCRIPTION || ""}
                   </span>
                 </p>
-                <p className="text-xs text-gray-500 font-normal leading-relaxed w-full">
+                <p className="text-xs text-gray-500 font-normal leading-relaxed w-full hidden md:block">
                   {process.env.NEXT_PUBLIC_APP_SUBTITLE || ""}
                 </p>
               </div>
@@ -119,6 +119,7 @@ export default function Home() {
                     className=""
                   />
                 </div>
+
                 <div className="text-center mb-3">
                   <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-2 sm:mb-4">
                     {process.env.NEXT_PUBLIC_APP_TITLE || ""}
@@ -139,9 +140,7 @@ export default function Home() {
                   </div>
                 </div>
 
-                <div className="flex justify-center">
-                  <AuthForm onAuthSuccess={handleAuthSuccess} />
-                </div>
+                <AuthForm onAuthSuccess={handleAuthSuccess} />
               </div>
               <div className="bgx-green-500">
                 <QuestionPreview />

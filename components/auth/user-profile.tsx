@@ -26,6 +26,8 @@ import {
   Loader2,
   ChevronRight,
   ChevronLeft,
+  ChevronDown,
+  ChevronUp,
   Power,
   KeyRound,
 } from "lucide-react";
@@ -1015,6 +1017,10 @@ export function UserProfile({
       return false;
     }
 
+    if (body.xp_awarded && body.xp_awarded > 0) {
+      toast.success("Success", `You have earned ${body.xp_awarded} XP.`);
+    }
+
     toast.success("Success", "Answer commitment saved successfully.");
     return true;
   };
@@ -1022,94 +1028,98 @@ export function UserProfile({
   return (
     <div className="w-full">
       {vmkInMemory || BYPASS_VMK_UI_CHECKS ? (
-        <div className="w-full flex flex-row justify-around space-x-4 bg-white rounded-lg">
-          {!profileCardExpanded ? (
-            <div className="profile-card-minimized mt-4 flex flex-col items-center justify-top gap-2 p-2 pt-5 border-0 w-fit">
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-9 w-9 rounded-full shrink-0"
-                onClick={() => setProfileCardExpanded(true)}
-                title="Expand profile"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-              <p className="text-xs text-gray-500 font-normal leading-relaxed">
-                {user?.totalXp || 0} XP
-              </p>
-              <Button
-                size="icon"
-                variant="ghost"
-                className="h-9 w-9 rounded-full shrink-0 text-red-600 hover:bg-red-50 hover:text-red-700"
-                onClick={handleLogout}
-                disabled={isLoggingOut}
-                title="Logout"
-              >
-                {isLoggingOut ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Power className="h-4 w-4" />
-                )}
-              </Button>
-              {isDevicePRFSupported && prfKek && !user.prfEncryptedVmk && (
+        <div className="main-body-area w-full flex flex-col md:flex-row justify-around md:space-x-4 bg-white rounded-lg">
+          <div className="bgx-red-500">
+            {!profileCardExpanded ? (
+              <div className="profile-card-minimized md:mt-4 flex md:flex-col items-center justify-top md:gap-2 md:p-2 md:pt-5 border-0 w-fit">
                 <Button
                   size="icon"
                   variant="ghost"
-                  className="h-9 w-9 rounded-full shrink-0 text-green-600 hover:bg-green-50 hover:text-green-700"
-                  onClick={handleCommitLazyPRFSupport}
-                  disabled={committingPrfSupportToServer}
-                  title="Commit pure-biometrics encryption support"
+                  className="h-9 w-9 rounded-full shrink-0"
+                  onClick={() => setProfileCardExpanded(true)}
+                  title="Expand profile"
                 >
-                  {committingPrfSupportToServer ? (
+                  <ChevronRight className="h-4 w-4 hidden md:block" />
+                  <ChevronDown className="h-4 w-4 block md:hidden" />
+                </Button>
+                <p className="text-xs text-gray-500 font-normal leading-relaxed">
+                  {user?.totalXp || 0} XP
+                </p>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-9 w-9 rounded-full shrink-0 text-red-600 hover:bg-red-50 hover:text-red-700"
+                  onClick={handleLogout}
+                  disabled={isLoggingOut}
+                  title="Logout"
+                >
+                  {isLoggingOut ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
-                    <KeyRound className="h-4 w-4" />
+                    <Power className="h-4 w-4" />
                   )}
                 </Button>
-              )}
-            </div>
-          ) : (
-            <Card className="profile-card-expanded mt-4 border-0 bg-white w-full max-w-sm">
-              <CardHeader className="text-center pb-4 px-4 sm:px-6 relative">
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="absolute top-2 right-2 h-8 w-8 rounded-full shrink-0"
-                  onClick={() => setProfileCardExpanded(false)}
-                  title="Minimize profile"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <div className="flex flex-col items-center space-y-3 sm:space-y-4">
-                  <div>
-                    <CardTitle className="text-xl sm:text-2xl font-bold text-gray-900">
-                      <span className="text-blue-600">{">"}</span>{" "}
-                      {user.username}
-                    </CardTitle>
-                  </div>
-                  <p className="text-lg text-gray-500 font-normal leading-relaxed">
-                    {user?.totalXp || 0} XP
-                  </p>
-                </div>
-              </CardHeader>
-
-              <CardContent className="space-y-3 sm:space-y-4 px-4 sm:px-6">
-                <div className="pt-3 sm:pt-4 border-t">
+                {isDevicePRFSupported && prfKek && !user.prfEncryptedVmk && (
                   <Button
-                    onClick={handleLogout}
-                    disabled={isLoggingOut}
-                    variant="outline"
-                    className="w-full h-10 sm:h-11 border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 text-sm sm:text-base"
+                    size="icon"
+                    variant="ghost"
+                    className="h-9 w-9 rounded-full shrink-0 text-green-600 hover:bg-green-50 hover:text-green-700"
+                    onClick={handleCommitLazyPRFSupport}
+                    disabled={committingPrfSupportToServer}
+                    title="Commit pure-biometrics encryption support"
                   >
-                    <span className="text-xs mr-2">$</span>
-                    {isLoggingOut ? "logout..." : "logout"}
+                    {committingPrfSupportToServer ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <KeyRound className="h-4 w-4" />
+                    )}
                   </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+                )}
+              </div>
+            ) : (
+              <Card className="profile-card-expanded mt-4 border-0 bg-white w-full max-w-sm">
+                <CardHeader className="text-center pb-4 px-4 sm:px-6 relative">
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="absolute top-2 right-2 h-8 w-8 rounded-full shrink-0"
+                    onClick={() => setProfileCardExpanded(false)}
+                    title="Minimize profile"
+                  >
+                    <ChevronLeft className="h-4 w-4 hidden md:block" />
+                    <ChevronUp className="h-4 w-4 block md:hidden" />
+                  </Button>
+                  <div className="flex flex-col items-center space-y-3 sm:space-y-4">
+                    <div>
+                      <CardTitle className="text-xl sm:text-2xl font-bold text-gray-900">
+                        <span className="text-blue-600">{">"}</span>{" "}
+                        {user.username}
+                      </CardTitle>
+                    </div>
+                    <p className="text-lg text-gray-500 font-normal leading-relaxed">
+                      {user?.totalXp || 0} XP
+                    </p>
+                  </div>
+                </CardHeader>
 
-          <Card className="content-card mt-4 border-0 shadow-2xl backdrop-blur-sm w-full">
+                <CardContent className="space-y-3 sm:space-y-4 px-4 sm:px-6">
+                  <div className="pt-3 sm:pt-4 border-t">
+                    <Button
+                      onClick={handleLogout}
+                      disabled={isLoggingOut}
+                      variant="outline"
+                      className="w-full h-10 sm:h-11 border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 text-sm sm:text-base"
+                    >
+                      <span className="text-xs mr-2">$</span>
+                      {isLoggingOut ? "logout..." : "logout"}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          <Card className="content-card mt-4 border-0 shadow-2xl backdrop-blur-sm w-full bgx-green-500">
             <CardContent className="px-4 sm:px-6">
               <Tabs defaultValue="privacy-data-game" className="w-full mt-2">
                 <TabsList
@@ -1425,7 +1435,7 @@ export function UserProfile({
           </Card>
         </div>
       ) : (
-        <div className="w-full max-w-md mx-auto px-4 sm:px-0">
+        <div className="renter-vault-password w-full max-w-md mx-auto px-4 sm:px-0">
           <Card className="mt-4 border-0 shadow-2xl backdrop-blur-sm">
             <CardHeader className="px-4 sm:px-6">
               <div className="flex flex-col">
