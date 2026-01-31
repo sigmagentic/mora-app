@@ -138,6 +138,11 @@ function ResultRow({ item }: { item: PastResultItem }) {
               )}
             </div>
           </div>
+
+          <div className="text-xs bg-gray-100 text-gray-500 p-1 rounded-md w-fit font-bold px-2 cursor-pointer">
+            Verify Result with Arcium{" "}
+            <span className="text-gray-400">(offline)</span>
+          </div>
         </div>
       </div>
     </Card>
@@ -177,7 +182,7 @@ export function PastResults() {
     return (
       <div className="flex flex-col items-center justify-center py-12">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-gray-500 border-t-transparent" />
-        <p className="mt-3 text-sm text-gray-500">Loading past results…</p>
+        <p className="mt-3 text-sm text-gray-500">Loading results…</p>
       </div>
     );
   }
@@ -188,9 +193,7 @@ export function PastResults() {
 
   if (items.length === 0) {
     return (
-      <p className="py-8 text-center text-sm text-gray-500">
-        No past results yet.
-      </p>
+      <p className="py-8 text-center text-sm text-gray-500">No results yet.</p>
     );
   }
 

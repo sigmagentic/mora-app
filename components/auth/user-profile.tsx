@@ -1202,7 +1202,7 @@ export function UserProfile({
                     className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm"
                   >
                     <span className="text-xs">+</span>
-                    Past Results
+                    Results
                   </TabsTrigger>
                   <TabsTrigger
                     value="predictions"
@@ -1499,10 +1499,21 @@ export function UserProfile({
                 <TabsContent value="past-results">
                   <Card className="mt-4">
                     <CardHeader>
-                      <CardTitle>Past Results</CardTitle>
+                      <CardTitle>Results</CardTitle>
                       <CardDescription className="text-gray-600 text-xs">
-                        Aggregated results from past questions (no individual
-                        answers or identities are ever stored or revealed).
+                        Aggregated results from past questions high engagement
+                        (no individual answers or identities are ever stored or
+                        revealed).{" "}
+                        <a
+                          href="https://www.arcium.ai"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-gray-500 underline hover:text-gray-600"
+                        >
+                          Arcium
+                        </a>{" "}
+                        private proofs are used to verify the integrity of the
+                        aggregated results.
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -1516,10 +1527,10 @@ export function UserProfile({
                     <CardHeader>
                       <CardTitle>Predictions</CardTitle>
                       <CardDescription className="text-gray-600 text-xs min-h-[300px]">
+                        <span className="text-2xl inline-block mr-2">👀</span>
                         Want to bet on how the masses will respond to these
                         morality questions? Private and verifiable prediction
                         markets coming soon...
-                        <span className="text-2xl">👀</span>
                       </CardDescription>
                     </CardHeader>
                   </Card>

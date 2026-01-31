@@ -245,7 +245,7 @@ export function PrivateDataGame({
           return (
             <div
               key={hour}
-              className={`p-4 border rounded text-center ${
+              className={`p-2 border rounded text-center ${
                 isActive
                   ? "bg-green-200 border-green-500 animate-pulse"
                   : isPast

@@ -27,13 +27,13 @@ interface AboutAppSlideshowProps {
 
 const textSizeClasses: Record<SlideTextSize, string> = {
   xl: "text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight",
-  l: "text-2xl sm:text-3xl font-bold",
-  md: "text-base sm:text-lg font-medium",
+  l: "text-2xl sm:text-3xl md:text-4xl font-bold",
+  md: "text-base sm:text-lg md:text-xl font-medium",
 };
 
 const DEFAULT_SLIDES: AboutAppSlide[] = [
   {
-    text: "AI and tech companies have harvested 99% of all human data.",
+    text: "AI companies have harvested 99% of all human data.",
     size: "xl",
   },
   {
@@ -53,11 +53,11 @@ const DEFAULT_SLIDES: AboutAppSlide[] = [
     size: "xl",
   },
   {
-    text: "This is human morality data.",
+    text: "This is 'human morality' data.",
     size: "xl",
   },
   {
-    text: "MORA helps you own it, protect it, and benefit from it.",
+    text: "And MORA helps you own it, protect it, and monetize it.",
     size: "l",
   },
   {
@@ -127,7 +127,7 @@ export function AboutAppSlideshow({
         onClose();
       }
     },
-    [onClose],
+    [onClose]
   );
 
   const slide = slides[index];
@@ -154,7 +154,7 @@ export function AboutAppSlideshow({
                 className={cn(
                   "absolute left-3 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full flex items-center justify-center transition-colors",
                   "text-neutral-500 hover:text-neutral-900 hover:bg-neutral-200/80 dark:text-neutral-400 dark:hover:text-neutral-100 dark:hover:bg-neutral-800/80",
-                  "disabled:opacity-30 disabled:pointer-events-none",
+                  "disabled:opacity-30 disabled:pointer-events-none"
                 )}
                 aria-label="Previous slide"
               >
@@ -167,7 +167,7 @@ export function AboutAppSlideshow({
                 className={cn(
                   "absolute right-3 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full flex items-center justify-center transition-colors",
                   "text-neutral-500 hover:text-neutral-900 hover:bg-neutral-200/80 dark:text-neutral-400 dark:hover:text-neutral-100 dark:hover:bg-neutral-800/80",
-                  "disabled:opacity-30 disabled:pointer-events-none",
+                  "disabled:opacity-30 disabled:pointer-events-none"
                 )}
                 aria-label="Next slide"
               >
@@ -188,7 +188,7 @@ export function AboutAppSlideshow({
                 <p
                   className={cn(
                     "text-neutral-800 dark:text-neutral-200 text-center leading-tight",
-                    textClass,
+                    textClass
                   )}
                 >
                   {slide?.text}
@@ -207,7 +207,7 @@ export function AboutAppSlideshow({
                     "w-2 h-2 rounded-full transition-all duration-200",
                     i === index
                       ? "bg-neutral-700 dark:bg-neutral-300 w-6"
-                      : "bg-neutral-300 dark:bg-neutral-600 hover:bg-neutral-400 dark:hover:bg-neutral-500",
+                      : "bg-neutral-300 dark:bg-neutral-600 hover:bg-neutral-400 dark:hover:bg-neutral-500"
                   )}
                   aria-label={`Go to slide ${i + 1}`}
                 />
