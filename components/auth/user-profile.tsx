@@ -193,12 +193,13 @@ export function UserProfile({
 
             setVaultPassword(atob(sessionVaultPassword!));
 
+            // need to pull this off the thread as it needs vaultPassword state
             setTimeout(() => {
-              setPasswordEnterOrReuseChecksHappening(false); // we can show the password UI now!
+              // autologin the user with the session cached password
+              handleVaultPasswordBasedVmkUnwrapping(false);
             }, 1500);
 
-            // autologin the user with the session cached password
-            handleVaultPasswordBasedVmkUnwrapping(false);
+            // setPasswordEnterOrReuseChecksHappening(false); // we can show the password UI now!
           } else {
             // setVaultMode("enter");
             setPasswordEnterOrReuseChecksHappening(false); // we can show the password UI now!
