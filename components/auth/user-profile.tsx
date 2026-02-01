@@ -1583,7 +1583,8 @@ export function UserProfile({
                       <CardDescription className="text-gray-600 text-xs">
                         Aggregated results from past questions high engagement
                         (no individual answers or identities are ever stored or
-                        revealed).{" "}
+                        revealed). One random question is chosen every day, and
+                        the results are aggregated and verified using{" "}
                         <a
                           href="https://www.arcium.ai"
                           target="_blank"
@@ -1592,8 +1593,8 @@ export function UserProfile({
                         >
                           Arcium
                         </a>{" "}
-                        private proofs are used to verify the integrity of the
-                        aggregated results.
+                        for verifiable aggregation. Soon these Arcium-verifed
+                        questions will be part of prediction markets.{" "}
                       </CardDescription>
                     </CardHeader>
                     <CardContent>

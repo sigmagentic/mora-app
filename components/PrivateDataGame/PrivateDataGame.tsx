@@ -13,6 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
 import { AnswerBit } from "@/lib/answer-commitments";
 import { getEpochId } from "@/lib/game-epoch";
 import { QuestionDisplay } from "./QuestionDisplay";
@@ -240,13 +241,16 @@ export function PrivateDataGame({
             hour === currentHour + 1 || (currentHour === 24 && hour === 1);
           const isFuture = hour > currentHour;
           const isPlayed = playedHours.includes(hour);
+          const isArciumActive = isActive && randomQuestion?.arciumPollId;
 
           return (
             <div
               key={hour}
               className={`p-2 border rounded text-center ${
                 isActive
-                  ? "bg-green-200 border-green-500 animate-pulse"
+                  ? isArciumActive
+                    ? "bg-gradient-to-br from-green-200 to-violet-200 dark:from-green-900/50 dark:to-violet-900/50 border-violet-500 ring-2 ring-violet-300 dark:ring-violet-700 animate-pulse"
+                    : "bg-green-200 border-green-500 animate-pulse"
                   : isPast
                   ? "bg-gray-300 opacity-50"
                   : "bg-gray-100"
@@ -274,8 +278,13 @@ export function PrivateDataGame({
                 </div>
               )}
               {isActive && (
-                <div className="text-[9px] md:text-xs text-black">
-                  {isPlayed ? "Live & Played!" : "Live Now!"}
+                <div className="text-[9px] md:text-xs text-black space-y-0.5">
+                  <div>{isPlayed ? "Live & Played!" : "Live Now!"}</div>
+                  {isArciumActive && (
+                    <div className="font-semibold text-violet-700 text-[9px]">
+                      Arcium Verifiable
+                    </div>
+                  )}
                 </div>
               )}
               {isNext && (
@@ -306,7 +315,25 @@ export function PrivateDataGame({
           {randomQuestion && (
             <>
               <DialogHeader>
-                <DialogTitle>Question</DialogTitle>
+                <div className="flex flex-col gap-2">
+                  <DialogTitle className="flex items-center gap-2 flex-wrap">
+                    Question
+                    {randomQuestion?.arciumPollId && (
+                      <Badge
+                        variant="secondary"
+                        className="bg-gradient-to-br from-green-200 to-violet-200 dark:from-green-900/50 dark:to-violet-900/50 border-violet-500 ring-2 ring-violet-300 dark:ring-violet-700 font-semibold text-[10px] px-2 py-1"
+                      >
+                        ✨ Arcium Verifiable
+                      </Badge>
+                    )}
+                  </DialogTitle>
+                  {randomQuestion?.arciumPollId && (
+                    <p className="text-[10px] text-green-600 dark:text-green-400">
+                      This question&apos;s results will be verifiable on the
+                      Arcium network and soon be part of prediction markets.
+                    </p>
+                  )}
+                </div>
               </DialogHeader>
               <div
                 className={`space-y-4 ${

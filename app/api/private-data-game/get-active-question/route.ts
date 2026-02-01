@@ -7,6 +7,8 @@ import {
   getOpensAt,
   getClosesAt,
   toTimestampStr,
+  getGameHourSlot,
+  getArciumHourForDay,
 } from "@/lib/game-epoch";
 import { addNewQuestionAnswerSet } from "@/app/manage/dash/actions";
 
@@ -19,6 +21,8 @@ export async function GET(request: NextRequest) {
 
     let bypassAllLoggedInLogic = false;
     let activeQuestionData: GameQuestion | null = null;
+    /** Set when we promote a UPCOMING to ACTIVE and tag it as Arcium. */
+    let promotedArciumPollId: number | undefined;
 
     if (giveSampleQuestion && giveSampleQuestion === "1") {
       // lets check for aoptional query string param called "give_sample_question"
@@ -340,14 +344,27 @@ export async function GET(request: NextRequest) {
         const opensAt = getOpensAt(now);
         const closesAt = getClosesAt(now);
 
+        // At most 1 Arcium question per day: stateless pick of the designated hour for today.
+        const isArciumHour =
+          getGameHourSlot(now) === getArciumHourForDay(now);
+        if (isArciumHour) {
+          promotedArciumPollId =
+            Math.floor(Math.random() * 9000) + 1000; /* 1000-9999, placeholder until Arcium integration */
+        }
+
+        const updatePayload: Record<string, unknown> = {
+          game_status: "ACTIVE",
+          epoch_id: _isActiveHHDDMMYY,
+          opens_at: toTimestampStr(opensAt),
+          closes_at: toTimestampStr(closesAt),
+        };
+        if (promotedArciumPollId != null) {
+          updatePayload.arcium_poll_id = promotedArciumPollId;
+        }
+
         const { error: updateError } = await supabase
           .from("questions_repo")
-          .update({
-            game_status: "ACTIVE",
-            epoch_id: _isActiveHHDDMMYY,
-            opens_at: toTimestampStr(opensAt),
-            closes_at: toTimestampStr(closesAt),
-          })
+          .update(updatePayload)
           .eq("id", activeQuestionData?.id);
 
         if (updateError) {
@@ -393,7 +410,9 @@ export async function GET(request: NextRequest) {
       })
     );
 
-    // Construct the GameQuestion object
+    // Construct the GameQuestion object (DB uses snake_case arcium_poll_id)
+    const dbRow = activeQuestionData as { arcium_poll_id?: number };
+    const arciumPollId = dbRow.arcium_poll_id ?? promotedArciumPollId;
     const activeQuestion: GameQuestion = {
       id: activeQuestionData.id,
       title: activeQuestionData.title,
@@ -404,6 +423,7 @@ export async function GET(request: NextRequest) {
       game_status: activeQuestionData.game_status,
       epoch_id: activeQuestionData.epoch_id,
       answers,
+      ...(arciumPollId != null && { arciumPollId }),
     };
 
     return NextResponse.json({ activeQuestion });

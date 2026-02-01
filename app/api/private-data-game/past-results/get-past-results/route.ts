@@ -13,7 +13,13 @@ type AggregateRow = {
   winning_answer: number;
   finalized_at: string;
 };
-type QuestionRow = { id: number; img: string | null; title: string | null; text: string };
+type QuestionRow = {
+  id: number;
+  img: string | null;
+  title: string | null;
+  text: string;
+  arcium_poll_id: number | null;
+};
 type AnswerRow = { question_id: number; id: number; text: string };
 
 export type PastResultItem = {
@@ -29,6 +35,7 @@ export type PastResultItem = {
   answer_b_count: number;
   winning_answer: number;
   finalized_at: string;
+  arcium_poll_id: number | null;
 };
 
 /**
@@ -57,7 +64,7 @@ export async function GET() {
 
     const { data: questions, error: qErr } = await supabase
       .from("questions_repo")
-      .select("id, img, title, text")
+      .select("id, img, title, text, arcium_poll_id")
       .in("id", questionIds);
 
     if (qErr) {
@@ -111,6 +118,7 @@ export async function GET() {
         answer_b_count: agg.answer_b_count,
         winning_answer: agg.winning_answer,
         finalized_at: agg.finalized_at,
+        arcium_poll_id: q?.arcium_poll_id ?? null,
       };
     });
 

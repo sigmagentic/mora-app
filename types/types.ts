@@ -42,4 +42,6 @@ export interface GameQuestion {
   game_status: string;
   epoch_id: string;
   answers: GameQuestionAnswer[];
+  /** When set, this question is Arcium-enabled for verifiable aggregation on the Arcium network. */
+  arciumPollId?: number;
 }

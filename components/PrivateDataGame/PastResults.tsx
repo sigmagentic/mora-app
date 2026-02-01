@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ChevronDown, ChevronUp, Trophy } from "lucide-react";
+import { ChevronDown, ChevronUp, ShieldCheck, Trophy } from "lucide-react";
 
 type PastResultItem = {
   question_id: number;
@@ -18,6 +18,7 @@ type PastResultItem = {
   answer_b_count: number;
   winning_answer: number;
   finalized_at: string;
+  arcium_poll_id: number | null;
 };
 
 const PREVIEW_LINES = 2;
@@ -28,8 +29,16 @@ function ResultRow({ item }: { item: PastResultItem }) {
   const preview = lines.slice(0, PREVIEW_LINES).join("\n");
   const hasMore = lines.length > PREVIEW_LINES;
 
+  const isArcium = item.arcium_poll_id != null;
+
   return (
-    <Card className="overflow-hidden border border-gray-200/80 bg-white/95 shadow-sm transition hover:shadow-md">
+    <Card
+      className={`overflow-hidden shadow-sm transition hover:shadow-md ${
+        isArcium
+          ? "border-violet-200/90 bg-gradient-to-br from-violet-50/80 to-white dark:from-violet-950/30 dark:to-gray-900"
+          : "border border-gray-200/80 bg-white/95"
+      }`}
+    >
       <div className="flex flex-col sm:flex-row gap-4 p-4 sm:p-5">
         {/* Thumbnail */}
         <div className="shrink-0">
@@ -48,8 +57,16 @@ function ResultRow({ item }: { item: PastResultItem }) {
 
         <div className="min-w-0 flex-1 space-y-3">
           {/* Title */}
-          <h3 className="font-semibold text-gray-900 text-sm sm:text-base leading-tight">
+          <h3 className="font-semibold text-gray-900 text-sm sm:text-base leading-tight flex items-center gap-2 flex-wrap">
             {item.title ?? "Untitled question"}
+            {isArcium && (
+              <Badge
+                variant="secondary"
+                className="bg-violet-100 dark:bg-violet-900/50 text-violet-700 dark:text-violet-300 border-violet-200 dark:border-violet-800 text-[10px] font-semibold"
+              >
+                ✨ Arcium
+              </Badge>
+            )}
           </h3>
 
           {/* Question text preview / full */}
@@ -139,10 +156,15 @@ function ResultRow({ item }: { item: PastResultItem }) {
             </div>
           </div>
 
-          <div className="text-xs bg-gray-100 text-gray-500 p-1 rounded-md w-fit font-bold px-2 cursor-pointer">
-            Verify Result with Arcium{" "}
-            <span className="text-gray-400">(offline)</span>
-          </div>
+          {isArcium && (
+            <div className="inline-flex items-center gap-1.5 text-xs bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300 p-1.5 rounded-md font-semibold px-2.5 border border-violet-200/80 dark:border-violet-800/60">
+              <ShieldCheck className="h-3.5 w-3.5" />
+              Verify Result with Arcium{" "}
+              <span className="text-violet-500 dark:text-violet-400 font-normal">
+                (offline)
+              </span>
+            </div>
+          )}
         </div>
       </div>
     </Card>

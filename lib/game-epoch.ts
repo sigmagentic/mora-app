@@ -68,3 +68,22 @@ export function getClosesAt(now: Date): Date {
 export function toTimestampStr(d: Date): string {
   return d.toISOString().replace("T", " ").replace("Z", "");
 }
+
+/**
+ * Stateless: returns the single game hour (1–24) that is designated as Arcium for the given day.
+ * At most one question per day is Arcium-enabled; this determines which hour gets it.
+ * The deterministic logic does give different hours on different days.
+From the test run:
+Each day gets its own hour: Jan 1 → 22, Jan 2 → 23, Jan 3 → 24, Jan 4 → 1, etc.
+Over 30 days, 23 of the 24 possible hours were used; the distribution is spread out.
+The hash uses ddmmyy, so dates like 010125, 020125, etc. produce different hash values. (hash % 24) + 1 then maps those to the 1–24 range, so the chosen hour changes as the date changes.
+So it is deterministic (same date → same hour) but different for each day, not the same hour every day.
+ */
+export function getArciumHourForDay(now: Date): number {
+  const ddmmyy = getCurrentDateDDMMYY(now).replace(/-/g, ""); // "ddmmyy"
+  let hash = 0;
+  for (let i = 0; i < ddmmyy.length; i++) {
+    hash = (hash * 31 + ddmmyy.charCodeAt(i)) >>> 0;
+  }
+  return (hash % 24) + 1; // 1–24
+}
