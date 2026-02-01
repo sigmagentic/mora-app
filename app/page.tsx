@@ -133,7 +133,6 @@ export default function Home() {
                       </span>
                     </p>
                     <p className="text-xs sm:text-sm text-gray-500 font-normal leading-relaxed">
-                      {/* */}{" "}
                       <span className="inline-block">
                         {process.env.NEXT_PUBLIC_APP_SUBTITLE || ""}
                       </span>

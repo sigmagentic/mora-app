@@ -1581,21 +1581,37 @@ export function UserProfile({
                     <CardHeader>
                       <CardTitle>Results</CardTitle>
                       <CardDescription className="text-gray-600 text-xs">
-                        View aggregated results from past questions high
-                        engagement (no individual answers or identities are ever
-                        stored or revealed). Also, one random question is chosen
-                        every day, and the results are aggregated and verified
-                        using{" "}
-                        <a
-                          href="https://www.arcium.ai"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-gray-500 underline hover:text-gray-600"
-                        >
-                          Arcium
-                        </a>{" "}
-                        for verifiable aggregation. Soon these Arcium-verifed
-                        questions will be part of prediction markets.{" "}
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <button
+                              type="button"
+                              className="!text-md hover:underline decoration-dotted cursor-help mt-2 text-left"
+                            >
+                              <span className="!text-md">
+                                👁️ What are these results & how are they
+                                verified?
+                              </span>
+                            </button>
+                          </PopoverTrigger>
+                          <PopoverContent className="max-w-sm text-xs text-gray-700">
+                            View aggregated results from past questions high
+                            engagement (no individual answers or identities are
+                            ever stored or revealed). <br /> <br /> Also, one
+                            random question is chosen every day, and the results
+                            are aggregated and verified using{" "}
+                            <a
+                              href="https://www.arcium.ai"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-gray-500 underline hover:text-gray-600"
+                            >
+                              Arcium
+                            </a>{" "}
+                            for verifiable aggregation. Soon these
+                            Arcium-verifed questions will be part of prediction
+                            markets.{" "}
+                          </PopoverContent>
+                        </Popover>
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -1609,7 +1625,7 @@ export function UserProfile({
                     <CardHeader>
                       <CardTitle>Predictions</CardTitle>
                       <CardDescription className="text-gray-600 text-xs min-h-[300px]">
-                        <span className="text-2xl inline-block mr-2">👀</span>
+                        <span className="mr-2">👀</span>
                         Want to bet on how the masses will respond to these
                         morality questions? Private and verifiable prediction
                         markets coming soon...

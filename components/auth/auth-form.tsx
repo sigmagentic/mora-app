@@ -8,13 +8,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -396,16 +390,21 @@ export function AuthForm({ onAuthSuccess }: AuthFormProps) {
                   </button>
                 </div>
 
-                <Dialog open={inviteCodesModalOpen} onOpenChange={setInviteCodesModalOpen}>
+                <Dialog
+                  open={inviteCodesModalOpen}
+                  onOpenChange={setInviteCodesModalOpen}
+                >
                   <DialogContent className="max-w-sm">
                     <DialogHeader>
                       <DialogTitle>Available invite codes</DialogTitle>
                     </DialogHeader>
                     {inviteCodesLoading ? (
                       <p className="text-sm text-muted-foreground">Loading…</p>
-                    ) : availableCodes === null ? null : availableCodes.length === 0 ? (
+                    ) : availableCodes ===
+                      null ? null : availableCodes.length === 0 ? (
                       <p className="text-sm text-muted-foreground">
-                        Sorry, no invites available at the moment. Try again later or follow our socials for when codes drop.
+                        Sorry, no invites available at the moment. Try again
+                        later or follow our socials for when codes drop.
                       </p>
                     ) : (
                       <ul className="text-sm space-y-1 max-h-[200px] overflow-y-auto">
@@ -425,41 +424,6 @@ export function AuthForm({ onAuthSuccess }: AuthFormProps) {
                     )}
                   </DialogContent>
                 </Dialog>
-
-                {/* <div className="space-y-1 sm:space-y-2">
-                  <Label
-                    htmlFor="register-email"
-                    className="text-xs sm:text-sm font-medium text-gray-700"
-                  >
-                    email: <span className="text-gray-400">optional</span>
-                  </Label>
-                  <Input
-                    id="register-email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="user@example.com"
-                    className="h-10 sm:h-11 text-sm sm:text-base"
-                  />
-                </div> */}
-
-                {/* <div className="space-y-1 sm:space-y-2">
-                  <Label
-                    htmlFor="register-displayName"
-                    className="text-xs sm:text-sm font-medium text-gray-700"
-                  >
-                    display_name:{" "}
-                    <span className="text-gray-400">optional</span>
-                  </Label>
-                  <Input
-                    id="register-displayName"
-                    type="text"
-                    value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
-                    placeholder="Your Name"
-                    className="h-10 sm:h-11 text-sm sm:text-base"
-                  />
-                </div> */}
 
                 {/* Cap CAPTCHA Widget - Only show if CAPTCHA is enabled */}
                 {isCaptchaEnabled && (
@@ -538,29 +502,6 @@ export function AuthForm({ onAuthSuccess }: AuthFormProps) {
 
             <TabsContent value="login">
               <form onSubmit={handleLogin} className="space-y-3 sm:space-y-4">
-                {/* <div className="space-y-1 sm:space-y-2">
-                  <Label
-                    htmlFor="login-username"
-                    className="text-xs sm:text-sm font-medium text-gray-700"
-                  >
-                    username: <span className="text-gray-400">optional</span>
-                  </Label>
-                  <Input
-                    id="login-username"
-                    type="text"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    placeholder="your_username || null"
-                    className="h-10 sm:h-11 text-sm sm:text-base"
-                  />
-                  <div className="mt-2">
-                    <p className="text-xs text-gray-500 leading-tight">
-                      Leave empty to authenticate with any passkey on this
-                      device
-                    </p>
-                  </div>
-                </div> */}
-
                 <Button
                   type="submit"
                   disabled={isLoading}

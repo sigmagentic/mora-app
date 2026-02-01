@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ChevronDown, ChevronUp, ShieldCheck, Trophy } from "lucide-react";
 
@@ -21,13 +21,14 @@ type PastResultItem = {
   arcium_poll_id: number | null;
 };
 
-const PREVIEW_LINES = 2;
+const PREVIEW_CHARS = 180;
 
 function ResultRow({ item }: { item: PastResultItem }) {
   const [expanded, setExpanded] = useState(false);
-  const lines = item.text.split(/\n/).filter(Boolean);
-  const preview = lines.slice(0, PREVIEW_LINES).join("\n");
-  const hasMore = lines.length > PREVIEW_LINES;
+  const hasMore = item.text.length > PREVIEW_CHARS;
+  const preview = hasMore
+    ? item.text.slice(0, PREVIEW_CHARS).trim() + "…"
+    : item.text;
 
   const isArcium = item.arcium_poll_id != null;
 
@@ -74,10 +75,7 @@ function ResultRow({ item }: { item: PastResultItem }) {
             {expanded ? (
               <p className="whitespace-pre-wrap">{item.text}</p>
             ) : (
-              <p className="whitespace-pre-wrap line-clamp-2 sm:line-clamp-none">
-                {preview}
-                {hasMore && lines.length > PREVIEW_LINES && "…"}
-              </p>
+              <p className="whitespace-pre-wrap">{preview}</p>
             )}
             {hasMore && (
               <button
@@ -115,10 +113,10 @@ function ResultRow({ item }: { item: PastResultItem }) {
                   : "border-gray-100 bg-gray-50/80"
               }`}
             >
-              <span className="text-gray-700 flex-1 min-w-0 truncate">
+              <span className="text-gray-700 flex-1 min-w-0 text-wrap text-xs sm:text-sm">
                 {item.answer_a_text}
               </span>
-              <span className="shrink-0 font-medium text-gray-900">
+              <span className="shrink-0 font-medium text-gray-900 text-sm sm:text-base">
                 {item.answer_a_count}
               </span>
               {item.winning_answer === 0 && (
@@ -138,10 +136,10 @@ function ResultRow({ item }: { item: PastResultItem }) {
                   : "border-gray-100 bg-gray-50/80"
               }`}
             >
-              <span className="text-gray-700 flex-1 min-w-0 truncate">
+              <span className="text-gray-700 flex-1 min-w-0 text-wrap text-xs sm:text-sm">
                 {item.answer_b_text}
               </span>
-              <span className="shrink-0 font-medium text-gray-900">
+              <span className="shrink-0 font-medium text-gray-900 text-sm sm:text-base">
                 {item.answer_b_count}
               </span>
               {item.winning_answer === 1 && (

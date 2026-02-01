@@ -294,7 +294,7 @@ export function PrivateDataGame({
               )}
               {fetchingActiveQuestion && isActive && (
                 <div className="flex flex-row justify-center mt-2">
-                  <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 mr-2 animate-spin" />
+                  <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 md:mr-2 animate-spin" />
                 </div>
               )}
             </div>

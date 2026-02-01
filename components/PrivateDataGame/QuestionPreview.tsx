@@ -16,29 +16,55 @@ export function QuestionPreview() {
       try {
         setIsLoading(true);
         setError(null);
-        const res = await fetch(
-          "/api/private-data-game/get-active-question?give_sample_question=1"
-        );
 
-        if (!res.ok) {
-          const body = await res.json();
-          const errorMessage = body.error || "Failed to fetch question";
+        const hardcodedQuestion = {
+          id: 1,
+          title: "The First Day",
+          img: "https://api.itheumcloud.com/app_nftunes/other/the-first-day.jpg",
+          text: "On your first day at a new school, you notice a school shooter approaching the building. You can warn the class, but doing so risks trapping you inside due to the chaos that will follow. If you stay quiet, you can leave safely. What do you do?",
+          answers: [
+            {
+              id: 1,
+              text: "Warn everyone, even if it means risking your own safety.",
+            },
+            {
+              id: 2,
+              text: "Leave quietly by yourself in secret and ensure your own safety first.",
+            },
+          ],
+        };
 
-          // Check if it's the "No active question found" error
-          if (errorMessage === "No active question found") {
-            setError("NO_QUESTIONS_AVAILABLE");
-          } else {
-            throw new Error(errorMessage);
-          }
+        const useHardcodedQuestion = Math.random() < 0.8;
+
+        if (useHardcodedQuestion) {
+          setQuestion(hardcodedQuestion as GameQuestion);
         } else {
-          const data = await res.json();
-          setQuestion(data.activeQuestion);
+          const res = await fetch(
+            "/api/private-data-game/get-active-question?give_sample_question=1"
+          );
+
+          if (!res.ok) {
+            const body = await res.json();
+            const errorMessage = body.error || "Failed to fetch question";
+
+            // Check if it's the "No active question found" error
+            if (errorMessage === "No active question found") {
+              setError("NO_QUESTIONS_AVAILABLE");
+            } else {
+              throw new Error(errorMessage);
+            }
+          } else {
+            const data = await res.json();
+            setQuestion(data.activeQuestion);
+          }
         }
       } catch (err: any) {
         console.error("Error fetching sample question:", err);
-        setError(err.message || "Failed to load question");
+        setError("NO_QUESTIONS_AVAILABLE");
       } finally {
-        setIsLoading(false);
+        setTimeout(() => {
+          setIsLoading(false);
+        }, 1000);
       }
     };
 
