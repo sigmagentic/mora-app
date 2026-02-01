@@ -140,7 +140,6 @@ export function PrivateDataGame({
   };
 
   const handleCommitAnswer = async () => {
-    debugger;
     if (!randomQuestion || !selectedAnswer) {
       toast.error("Error", "Unable to commit");
       return;

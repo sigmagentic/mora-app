@@ -180,6 +180,8 @@ export function UserProfile({
         if (prfKek && user.prfEncryptedVmk && user.prfVmkIv) {
           await handleVaultPasswordBasedVmkUnwrapping(true);
         } else {
+          setVaultMode("enter");
+
           // PR, we ask them to re-enter their vault password
           const sessionVaultPassword = localStorage.getItem("x-app-vp");
 
@@ -191,11 +193,14 @@ export function UserProfile({
 
             setVaultPassword(atob(sessionVaultPassword!));
 
+            setTimeout(() => {
+              setPasswordEnterOrReuseChecksHappening(false); // we can show the password UI now!
+            }, 1500);
+
             // autologin the user with the session cached password
             handleVaultPasswordBasedVmkUnwrapping(false);
-            setPasswordEnterOrReuseChecksHappening(false); // we can show the password UI now!
           } else {
-            setVaultMode("enter");
+            // setVaultMode("enter");
             setPasswordEnterOrReuseChecksHappening(false); // we can show the password UI now!
           }
         }
@@ -1010,7 +1015,6 @@ export function UserProfile({
   // e.g. handleAnswerChallengeGeneration(4, 12200126)
   const [commitmentTestInput, setCommitmentTestInput] = useState<string>("");
   const test_handleAnswerChallengeGeneration = async (input: string) => {
-    debugger;
     const [questionId, epochId, answerBit] = input.split(",");
 
     await handleAnswerChallengeGenerationAndCommitment(
@@ -1026,7 +1030,6 @@ export function UserProfile({
     epochId: string,
     answerBit: AnswerBit
   ): Promise<boolean> => {
-    debugger;
     if (!CACHED_VMK) {
       toast.error("Error", "VMK not available in memory.");
       return false;
@@ -1102,7 +1105,6 @@ export function UserProfile({
       <AboutAppSlideshow
         open={aboutAppSlideshowOpen}
         onClose={() => {
-          debugger;
           // IF it was shown automatically then we need to set the localstorage item
           if (INFO_SLIDESHOW_SHOWN_AUTOMATICALLY) {
             localStorage.setItem(
