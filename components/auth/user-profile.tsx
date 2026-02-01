@@ -193,6 +193,7 @@ export function UserProfile({
 
             // autologin the user with the session cached password
             handleVaultPasswordBasedVmkUnwrapping(false);
+            setPasswordEnterOrReuseChecksHappening(false); // we can show the password UI now!
           } else {
             setVaultMode("enter");
             setPasswordEnterOrReuseChecksHappening(false); // we can show the password UI now!
