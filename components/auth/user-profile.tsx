@@ -1122,7 +1122,7 @@ export function UserProfile({
 
   return (
     <div className="w-full">
-      <div className="debug-info text-xs text-gray-500">
+      {/* <div className="debug-info text-xs text-gray-500">
         Debug info:
         <pre>
           {JSON.stringify(
@@ -1137,7 +1137,7 @@ export function UserProfile({
             2
           )}
         </pre>
-      </div>
+      </div> */}
 
       <AboutAppSlideshow
         open={aboutAppSlideshowOpen}
