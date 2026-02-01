@@ -52,6 +52,9 @@ export default function Home() {
     setUser(null);
     setPrfKek(null);
 
+    // remove the vault password from local storage
+    localStorage.removeItem("x-app-vp");
+
     // hard reload the app to reset any in-memory state
     window.location.href = "/";
   };

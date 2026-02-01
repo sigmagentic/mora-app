@@ -17,7 +17,7 @@ export function QuestionPreview() {
         setIsLoading(true);
         setError(null);
         const res = await fetch(
-          "/api/private-data-game/get-active-question?give_sample_question=1",
+          "/api/private-data-game/get-active-question?give_sample_question=1"
         );
 
         if (!res.ok) {
@@ -51,7 +51,7 @@ export function QuestionPreview() {
         <CardContent className="flex flex-col items-center justify-center py-12 px-6">
           <Loader2 className="w-6 h-6 animate-spin text-gray-600 mb-4" />
           <p className="text-sm text-gray-600 text-center">
-            Loading moral dilemma...
+            Loading moral dilemma
           </p>
         </CardContent>
       </Card>

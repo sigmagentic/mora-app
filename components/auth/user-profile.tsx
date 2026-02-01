@@ -17,7 +17,6 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import {
-  User,
   Trash2,
   Download,
   Edit,
@@ -70,7 +69,7 @@ export function UserProfile({
 }: UserProfileProps) {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  // vault passwork based KEK creation
+  // vault password based KEK creation
   const [vaultMode, setVaultMode] = useState<"create" | "enter">("create");
   const [vaultPassword, setVaultPassword] = useState("");
   const [vaultConfirm, setVaultConfirm] = useState("");
@@ -82,6 +81,10 @@ export function UserProfile({
     useState(false);
   const [profileCardExpanded, setProfileCardExpanded] = useState(false);
   const [aboutAppSlideshowOpen, setAboutAppSlideshowOpen] = useState(false);
+  const [
+    passwordEnterOrReuseChecksHappening,
+    setPasswordEnterOrReuseChecksHappening,
+  ] = useState(true);
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -170,6 +173,7 @@ export function UserProfile({
     async function checkAsyncThings() {
       if (!user.encryptedVmk || !user.kekSalt || !user.vmkIv) {
         setVaultMode("create");
+        setPasswordEnterOrReuseChecksHappening(false); // we can show the password UI now!
       } else {
         // here the user already has the password so we need them to unwrap the VMK
         // ... BUT, if we have the PRF metadata available, we can automatically unwrap it with the PRK KEK
@@ -177,7 +181,22 @@ export function UserProfile({
           await handleVaultPasswordBasedVmkUnwrapping(true);
         } else {
           // PR, we ask them to re-enter their vault password
-          setVaultMode("enter");
+          const sessionVaultPassword = localStorage.getItem("x-app-vp");
+
+          if (sessionVaultPassword && sessionVaultPassword !== "") {
+            console.log(
+              "Decoded password from local storage:",
+              atob(sessionVaultPassword!)
+            );
+
+            setVaultPassword(atob(sessionVaultPassword!));
+
+            // autologin the user with the session cached password
+            handleVaultPasswordBasedVmkUnwrapping(false);
+          } else {
+            setVaultMode("enter");
+            setPasswordEnterOrReuseChecksHappening(false); // we can show the password UI now!
+          }
         }
       }
 
@@ -796,6 +815,16 @@ export function UserProfile({
       setVaultError(null);
     }
 
+    // Encode to password to Base64 and store in local storage (@TODO ideally we store it in a time sandboxed manner so user has to enter it again after XX hours)
+    const encodedString = btoa(vaultPassword);
+    console.log("Encoded vault password:", encodedString);
+
+    if (encodedString && encodedString !== "") {
+      localStorage.setItem("x-app-vp", encodedString);
+    } else {
+      localStorage.removeItem("x-app-vp");
+    }
+
     setVaultPassword("");
     setVaultConfirm("");
   };
@@ -845,6 +874,16 @@ export function UserProfile({
     }
 
     setVmkInMemory(true);
+
+    // Encode vault password to Base64 and store in session storage
+    const encodedString = btoa(vaultPassword);
+    console.log("Encoded vault password:", encodedString);
+
+    if (encodedString && encodedString !== "") {
+      localStorage.setItem("x-app-vp", encodedString);
+    } else {
+      localStorage.removeItem("x-app-vp");
+    }
 
     if (!usePrfBasedUnwrapping) {
       setVaultPassword("");
@@ -1074,6 +1113,7 @@ export function UserProfile({
           setAboutAppSlideshowOpen(false);
         }}
       />
+
       {vmkInMemory || BYPASS_VMK_UI_CHECKS ? (
         <div className="main-body-area w-full flex flex-col md:flex-row justify-around md:space-x-4 bg-white rounded-lg">
           <div className="bgx-red-500">
@@ -1279,7 +1319,7 @@ export function UserProfile({
                           <div className="flex flex-col items-center justify-center py-12">
                             <div className="h-8 w-8 animate-spin rounded-full border-2 border-gray-500 border-t-transparent" />
                             <p className="mt-3 text-sm text-gray-500">
-                              Loading game data...
+                              loading game data
                             </p>
                           </div>
                         )}
@@ -1540,126 +1580,138 @@ export function UserProfile({
           </Card>
         </div>
       ) : (
-        <div className="renter-vault-password w-full max-w-md mx-auto px-4 sm:px-0">
+        <div className="vault-password w-full max-w-md mx-auto px-4 sm:px-0">
           <Card className="mt-4 border-0 shadow-2xl backdrop-blur-sm">
-            <CardHeader className="px-4 sm:px-6">
-              <div className="flex flex-col">
-                <CardTitle className="text-xl font-bold text-gray-900">
-                  Master Vault Password
-                </CardTitle>
-                {vaultMode === "create" && (
-                  <CardDescription className="text-gray-600 text-[10px]">
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <button
-                          type="button"
-                          className="hover:underline decoration-dotted cursor-help mt-2"
-                        >
-                          ⚠️ What is this Master Vault Password?
-                        </button>
-                      </PopoverTrigger>
-                      <PopoverContent className="max-w-sm text-xs text-gray-700">
-                        All data is encrypted end-to-end using your
-                        device-bound, biometrics-powered, quantum-resistant
-                        encryption. This data is stored in a 'Vault'. <br />
-                        <br />
-                        You will still need a master vault password that will
-                        help you recover your vault if your biometrics
-                        encryption fails on this device OR if you need to access
-                        or backup your vault on another device. <br />
-                        <br />
-                        It&apos;s critical you pick something strong and secure
-                        for this password and make sure you back it up offline
-                        for safety!
-                        <br />
-                        <br />
-                        Note that we CANNOT recover or reset your vault password
-                        for you. If you forget it, you will need to create a new
-                        vault and all your past data will be lost.
-                      </PopoverContent>
-                    </Popover>
-                  </CardDescription>
-                )}
+            {passwordEnterOrReuseChecksHappening && (
+              <div className="flex flex-col items-center justify-center py-12">
+                <div className="h-8 w-8 animate-spin rounded-full border-2 border-gray-500 border-t-transparent" />
+                <p className="mt-3 text-sm text-gray-500">booting up</p>
               </div>
-            </CardHeader>
-
-            <CardContent className="space-y-3 sm:space-y-4 px-4 sm:px-6">
-              {vaultMode === "create" ? (
-                <div className="space-y-3">
-                  <div className="p-2 sm:p-3 bg-gray-50 rounded-lg space-y-2">
-                    <Input
-                      type="password"
-                      placeholder="Password"
-                      value={vaultPassword}
-                      onChange={(e) => setVaultPassword(e.target.value)}
-                      className="text-sm"
-                    />
-                    <Input
-                      type="password"
-                      placeholder="Confirm password"
-                      value={vaultConfirm}
-                      onChange={(e) => setVaultConfirm(e.target.value)}
-                      className="text-sm"
-                    />
-                    {vaultError && (
-                      <p className="text-xs text-red-600">{vaultError}</p>
+            )}
+            {!passwordEnterOrReuseChecksHappening && (
+              <>
+                <CardHeader className="px-4 sm:px-6">
+                  <div className="flex flex-col">
+                    <CardTitle className="text-xl font-bold text-gray-900">
+                      Master Vault Password
+                    </CardTitle>
+                    {vaultMode === "create" && (
+                      <CardDescription className="text-gray-600 text-[10px]">
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <button
+                              type="button"
+                              className="hover:underline decoration-dotted cursor-help mt-2"
+                            >
+                              ⚠️ What is this Master Vault Password?
+                            </button>
+                          </PopoverTrigger>
+                          <PopoverContent className="max-w-sm text-xs text-gray-700">
+                            All data is encrypted end-to-end using your
+                            device-bound, biometrics-powered, quantum-resistant
+                            encryption. This data is stored in a 'Vault'. <br />
+                            <br />
+                            You will still need a master vault password that
+                            will help you recover your vault if your biometrics
+                            encryption fails on this device OR if you need to
+                            access or backup your vault on another device.{" "}
+                            <br />
+                            <br />
+                            It&apos;s critical you pick something strong and
+                            secure for this password and make sure you back it
+                            up offline for safety!
+                            <br />
+                            <br />
+                            Note that we CANNOT recover or reset your vault
+                            password for you. If you forget it, you will need to
+                            create a new vault and all your past data will be
+                            lost.
+                          </PopoverContent>
+                        </Popover>
+                      </CardDescription>
                     )}
-                    <div className="pt-2">
-                      <Button
-                        onClick={handleVaultPasswordCreation}
-                        variant="outline"
-                        className="w-full h-10 sm:h-11 text-sm sm:text-base"
-                      >
-                        Create Password
-                      </Button>
-                    </div>
                   </div>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <div className="p-2 sm:p-3 bg-gray-50 rounded-lg space-y-2">
-                    <Input
-                      type="password"
-                      placeholder="Vault password"
-                      value={vaultPassword}
-                      onChange={(e) => setVaultPassword(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && vaultPassword.length > 4) {
-                          handleVaultPasswordBasedVmkUnwrapping(false);
-                        }
-                      }}
-                      className="text-sm"
-                    />
-                    {vaultError && (
-                      <p className="text-xs text-red-600">{vaultError}</p>
-                    )}
-                    <div className="pt-2 space-y-2">
-                      <Button
-                        onClick={() =>
-                          handleVaultPasswordBasedVmkUnwrapping(false)
-                        }
-                        variant="outline"
-                        className="w-full h-10 sm:h-11 text-sm sm:text-base"
-                      >
-                        Enter Vault
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              )}
+                </CardHeader>
 
-              <div className="pt-3 sm:pt-4 border-t">
-                <Button
-                  onClick={handleLogout}
-                  disabled={isLoggingOut}
-                  variant="outline"
-                  className="w-full h-10 sm:h-11 border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 text-sm sm:text-base"
-                >
-                  <span className="text-xs mr-2">$</span>
-                  {isLoggingOut ? "logout..." : "logout"}
-                </Button>
-              </div>
-            </CardContent>
+                <CardContent className="space-y-3 sm:space-y-4 px-4 sm:px-6">
+                  {vaultMode === "create" ? (
+                    <div className="space-y-3">
+                      <div className="p-2 sm:p-3 bg-gray-50 rounded-lg space-y-2">
+                        <Input
+                          type="password"
+                          placeholder="Password"
+                          value={vaultPassword}
+                          onChange={(e) => setVaultPassword(e.target.value)}
+                          className="text-sm"
+                        />
+                        <Input
+                          type="password"
+                          placeholder="Confirm password"
+                          value={vaultConfirm}
+                          onChange={(e) => setVaultConfirm(e.target.value)}
+                          className="text-sm"
+                        />
+                        {vaultError && (
+                          <p className="text-xs text-red-600">{vaultError}</p>
+                        )}
+                        <div className="pt-2">
+                          <Button
+                            onClick={handleVaultPasswordCreation}
+                            variant="outline"
+                            className="w-full h-10 sm:h-11 text-sm sm:text-base"
+                          >
+                            Create Password
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="p-2 sm:p-3 bg-gray-50 rounded-lg space-y-2">
+                        <Input
+                          type="password"
+                          placeholder="Vault password"
+                          value={vaultPassword}
+                          onChange={(e) => setVaultPassword(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" && vaultPassword.length > 4) {
+                              handleVaultPasswordBasedVmkUnwrapping(false);
+                            }
+                          }}
+                          className="text-sm"
+                        />
+                        {vaultError && (
+                          <p className="text-xs text-red-600">{vaultError}</p>
+                        )}
+                        <div className="pt-2 space-y-2">
+                          <Button
+                            onClick={() =>
+                              handleVaultPasswordBasedVmkUnwrapping(false)
+                            }
+                            variant="outline"
+                            className="w-full h-10 sm:h-11 text-sm sm:text-base"
+                          >
+                            Enter Vault
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="pt-3 sm:pt-4 border-t">
+                    <Button
+                      onClick={handleLogout}
+                      disabled={isLoggingOut}
+                      variant="outline"
+                      className="w-full h-10 sm:h-11 border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 text-sm sm:text-base"
+                    >
+                      <span className="text-xs mr-2">$</span>
+                      {isLoggingOut ? "logout..." : "logout"}
+                    </Button>
+                  </div>
+                </CardContent>
+              </>
+            )}
           </Card>
         </div>
       )}

@@ -182,7 +182,7 @@ export function PastResults() {
     return (
       <div className="flex flex-col items-center justify-center py-12">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-gray-500 border-t-transparent" />
-        <p className="mt-3 text-sm text-gray-500">Loading results…</p>
+        <p className="mt-3 text-sm text-gray-500">loading results</p>
       </div>
     );
   }
@@ -193,7 +193,7 @@ export function PastResults() {
 
   if (items.length === 0) {
     return (
-      <p className="py-8 text-center text-sm text-gray-500">No results yet.</p>
+      <p className="py-8 text-center text-sm text-gray-500">no results yet.</p>
     );
   }
 

@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
         console.error("Error fetching sample question:", sampleQuestionError);
         return NextResponse.json(
           { error: "Error fetching sample question" },
-          { status: 500 },
+          { status: 500 }
         );
       }
 
@@ -89,7 +89,7 @@ export async function GET(request: NextRequest) {
             error:
               "Corrupted gameplay state as there are more than two active questions which should NOT happen",
           },
-          { status: 500 },
+          { status: 500 }
         );
       }
 
@@ -105,7 +105,7 @@ export async function GET(request: NextRequest) {
         console.error("Error checking active question:", selectError);
         return NextResponse.json(
           { error: "Error checking active question" },
-          { status: 500 },
+          { status: 500 }
         );
       }
 
@@ -116,7 +116,7 @@ export async function GET(request: NextRequest) {
             error:
               "Corrupted gameplay state: multiple ACTIVE questions with same epoch_id",
           },
-          { status: 500 },
+          { status: 500 }
         );
       }
 
@@ -187,7 +187,7 @@ export async function GET(request: NextRequest) {
         // if there are no UPCOMING questions, then let's create a cyclic gameplay as above...
         if (dormantError || !dormantQuestionData) {
           console.log(
-            "NO UPCOMING QUESTIONS FOUND, CREATING A CYCLIC GAMEPLAY",
+            "NO UPCOMING QUESTIONS FOUND, CREATING A CYCLIC GAMEPLAY"
           );
 
           // Supabase .order() only accepts column names, not RANDOM(). Fetch FINALIZED and pick one in JS.
@@ -211,12 +211,12 @@ export async function GET(request: NextRequest) {
           if (randomPrevFinalizedQuestionError) {
             console.error(
               "Error random prev finalized question:",
-              randomPrevFinalizedQuestionError,
+              randomPrevFinalizedQuestionError
             );
 
             return NextResponse.json(
               { error: "E1 : No questions available" },
-              { status: 500 },
+              { status: 500 }
             );
           }
 
@@ -226,7 +226,7 @@ export async function GET(request: NextRequest) {
           ) {
             console.log(
               "randomPrevFinalizedQuestionData >>>>",
-              randomPrevFinalizedQuestionData[0],
+              randomPrevFinalizedQuestionData[0]
             );
           }
 
@@ -244,12 +244,12 @@ export async function GET(request: NextRequest) {
             console.log("answersData >>>>", answersData);
           } else {
             console.error(
-              "No answers found for the random previous finalized question",
+              "No answers found for the random previous finalized question"
             );
 
             return NextResponse.json(
               { error: "E2 : No questions available" },
-              { status: 500 },
+              { status: 500 }
             );
           }
 
@@ -257,7 +257,7 @@ export async function GET(request: NextRequest) {
           let clonedAndShuffledAnswers: any[] = answersData.map(
             (answer: any) => ({
               text: answer.text,
-            }),
+            })
           );
 
           // Unbiased shuffle for 2 answers: 50/50 swap or keep
@@ -276,25 +276,25 @@ export async function GET(request: NextRequest) {
 
           // can we call addNewQuestionAnswerSet to insert the new question and answers into the database?
           const result = await addNewQuestionAnswerSet(
-            JSON.stringify(newQuestion),
+            JSON.stringify(newQuestion)
           );
 
           if ("error" in result && result.error) {
             console.error(
               "Error adding new question and answers:",
-              result.error,
+              result.error
             );
 
             return NextResponse.json(
               { error: "E4 : No questions available" },
-              { status: 500 },
+              { status: 500 }
             );
           }
 
           if ("success" in result && result.success) {
             console.log(
               "New question and answers added successfully:",
-              result.questionId,
+              result.questionId
             );
 
             // OK, we can now
@@ -312,7 +312,7 @@ export async function GET(request: NextRequest) {
 
               return NextResponse.json(
                 { error: "E5 : No questions available" },
-                { status: 500 },
+                { status: 500 }
               );
             }
 
@@ -331,7 +331,7 @@ export async function GET(request: NextRequest) {
         if (!activeQuestionData) {
           return NextResponse.json(
             { error: "E6 : No questions available" },
-            { status: 500 },
+            { status: 500 }
           );
         }
 
@@ -354,7 +354,7 @@ export async function GET(request: NextRequest) {
           console.error("Error updating question metadata:", updateError);
           return NextResponse.json(
             { error: "Error updating question metadata" },
-            { status: 500 },
+            { status: 500 }
           );
         }
 
@@ -366,7 +366,7 @@ export async function GET(request: NextRequest) {
     if (!activeQuestionData) {
       return NextResponse.json(
         { error: "No active question found" },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -381,7 +381,7 @@ export async function GET(request: NextRequest) {
       console.error("Error fetching answers:", answersError);
       return NextResponse.json(
         { error: "Error fetching answers" },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -390,7 +390,7 @@ export async function GET(request: NextRequest) {
       (ans: GameQuestionAnswer) => ({
         id: ans.id,
         text: ans.text,
-      }),
+      })
     );
 
     // Construct the GameQuestion object
@@ -411,7 +411,7 @@ export async function GET(request: NextRequest) {
     console.error("get-active-question error:", err);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
