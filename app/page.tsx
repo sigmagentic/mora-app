@@ -72,13 +72,13 @@ export default function Home() {
       <div className="flex-1 flex flex-col justify-top px-4 py-6 sm:py-8 lg:py-6">
         <div className="container mx-auto h-full max-w-6xl">
           {user && (
-            <div className="bgx-red-500 flex md:flex-row flex-col items-center justify-center md:gap-4 pb-2">
+            <div className="bgx-red-500 flex md:flex-row flex-col items-center justify-center pb-2 md:pb-0">
               <div className="flex justify-center bg-white rounded-full p-[10px] w-fit mx-auto overflow-hidden">
                 <Image
-                  src="/mora-cat-logo.png"
+                  src="/mora-cat-privacy-logo.png"
                   alt="MORA Cat Logo"
-                  width={60}
-                  height={20}
+                  width={80}
+                  height={40}
                   className=""
                 />
               </div>
@@ -87,7 +87,7 @@ export default function Home() {
                   {process.env.NEXT_PUBLIC_APP_TITLE || ""}
                 </h1>
               </div>
-              <div className="w-full">
+              <div className="w-full md:ml-4">
                 <p className="text-sm sm:text-base lg:text-lg xl:text-xl text-gray-600 leading-relaxed text-center md:text-left">
                   <span className="inline-block">
                     {process.env.NEXT_PUBLIC_APP_DESCRIPTION || ""}
@@ -111,13 +111,13 @@ export default function Home() {
             </div>
           ) : (
             <div className="grid md:grid-cols-2 gap-6 bgx-red-500">
-              <div className="mt-20">
+              <div className="mt-[70px]">
                 <div className="flex justify-center bg-white rounded-full p-[10px] w-fit mx-auto overflow-hidden">
                   <Image
-                    src="/mora-cat-logo.png"
+                    src="/mora-cat-privacy-logo.png"
                     alt="MORA Cat Logo"
                     width={120}
-                    height={40}
+                    height={60}
                     className=""
                   />
                 </div>

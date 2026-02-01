@@ -1581,10 +1581,11 @@ export function UserProfile({
                     <CardHeader>
                       <CardTitle>Results</CardTitle>
                       <CardDescription className="text-gray-600 text-xs">
-                        Aggregated results from past questions high engagement
-                        (no individual answers or identities are ever stored or
-                        revealed). One random question is chosen every day, and
-                        the results are aggregated and verified using{" "}
+                        View aggregated results from past questions high
+                        engagement (no individual answers or identities are ever
+                        stored or revealed). Also, one random question is chosen
+                        every day, and the results are aggregated and verified
+                        using{" "}
                         <a
                           href="https://www.arcium.ai"
                           target="_blank"
