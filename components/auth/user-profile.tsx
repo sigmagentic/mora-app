@@ -85,6 +85,8 @@ export function UserProfile({
     passwordEnterOrReuseChecksHappening,
     setPasswordEnterOrReuseChecksHappening,
   ] = useState(true);
+  const [triggerAutoLoginAsCachedPwFound, setTriggerAutoLoginAsCachedPwFound] =
+    useState(false);
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -193,11 +195,13 @@ export function UserProfile({
 
             setVaultPassword(atob(sessionVaultPassword!));
 
-            // need to pull this off the thread as it needs vaultPassword state
-            setTimeout(() => {
-              // autologin the user with the session cached password
-              handleVaultPasswordBasedVmkUnwrapping(false);
-            }, 1500);
+            setTriggerAutoLoginAsCachedPwFound(true);
+
+            // // need to pull this off the thread as it needs vaultPassword state
+            // setTimeout(() => {
+            //   // autologin the user with the session cached password
+            //   handleVaultPasswordBasedVmkUnwrapping(false);
+            // }, 1500);
 
             // setPasswordEnterOrReuseChecksHappening(false); // we can show the password UI now!
           } else {
@@ -228,6 +232,21 @@ export function UserProfile({
       setInSecureGameMode(true); // just go into secure game mode! (triggers above event IF the user already setup the vault for game data)
     }
   }, [vmkInMemory]);
+
+  useEffect(() => {
+    if (
+      triggerAutoLoginAsCachedPwFound &&
+      vaultPassword &&
+      vaultPassword.length > 4
+    ) {
+      handleVaultPasswordBasedVmkUnwrapping(false);
+      setTriggerAutoLoginAsCachedPwFound(false);
+
+      setTimeout(() => {
+        setPasswordEnterOrReuseChecksHappening(false);
+      }, 1500);
+    }
+  }, [triggerAutoLoginAsCachedPwFound, vaultPassword]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files && e.target.files[0];
@@ -1103,6 +1122,23 @@ export function UserProfile({
 
   return (
     <div className="w-full">
+      <div className="debug-info text-xs text-gray-500">
+        Debug info:
+        <pre>
+          {JSON.stringify(
+            {
+              passwordEnterOrReuseChecksHappening,
+              triggerAutoLoginAsCachedPwFound,
+              vaultMode,
+              vaultPassword,
+              vmkInMemory,
+            },
+            null,
+            2
+          )}
+        </pre>
+      </div>
+
       <AboutAppSlideshow
         open={aboutAppSlideshowOpen}
         onClose={() => {
