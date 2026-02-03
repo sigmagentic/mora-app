@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     if (!credential || !expectedChallenge) {
       return NextResponse.json(
         { error: "Missing required fields" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -38,9 +38,10 @@ export async function POST(request: NextRequest) {
           kek_salt,
           vmk_iv,
           prf_encrypted_vmk,
-          prf_vmk_iv
+          prf_vmk_iv,
+          solana_wallet
         )
-      `,
+      `
       )
       .eq("credential_id", credentialId)
       .single();
@@ -52,7 +53,7 @@ export async function POST(request: NextRequest) {
       console.error("Credential not found error:", credError);
       return NextResponse.json(
         { error: "Credential not found" },
-        { status: 404 },
+        { status: 404 }
       );
     }
 
@@ -71,8 +72,8 @@ export async function POST(request: NextRequest) {
       // Parse the clientDataJSON to get the actual origin
       const clientDataJSON = JSON.parse(
         Buffer.from(credential.response.clientDataJSON, "base64url").toString(
-          "utf-8",
-        ),
+          "utf-8"
+        )
       );
       const credentialOrigin = clientDataJSON.origin;
 
@@ -97,18 +98,18 @@ export async function POST(request: NextRequest) {
               "Invalid origin - not a subdomain of RP ID:",
               originHost,
               "vs",
-              rpID,
+              rpID
             );
             return NextResponse.json(
               { error: "Invalid origin for this RP ID" },
-              { status: 400 },
+              { status: 400 }
             );
           }
         } catch (urlError) {
           console.error("Invalid origin URL:", credentialOrigin);
           return NextResponse.json(
             { error: "Invalid origin format" },
-            { status: 400 },
+            { status: 400 }
           );
         }
       }
@@ -129,9 +130,9 @@ export async function POST(request: NextRequest) {
           JSON.parse(
             Buffer.from(
               storedCredential.credential_public_key.substring(2),
-              "hex",
-            ).toString("utf8"),
-          ).data,
+              "hex"
+            ).toString("utf8")
+          ).data
         ),
         counter: storedCredential.counter,
         transports: storedCredential.transports,
@@ -180,6 +181,7 @@ export async function POST(request: NextRequest) {
         prfEncryptedVmk: user.prf_encrypted_vmk,
         prfVmkIv: user.prf_vmk_iv,
         totalXp,
+        solanaWallet: user.solana_wallet ?? undefined,
       },
     });
 
@@ -195,7 +197,7 @@ export async function POST(request: NextRequest) {
     console.error("Login complete error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

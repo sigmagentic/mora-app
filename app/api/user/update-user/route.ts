@@ -25,6 +25,9 @@ export async function POST(request: NextRequest) {
     const prf_encrypted_vmk = form.get("prf_encrypted_vmk")?.toString();
     const prf_vmk_iv = form.get("prf_vmk_iv")?.toString();
 
+    // Solana wallet (user can set only once; admin/support can update via DB)
+    const solana_wallet = form.get("solana_wallet")?.toString();
+
     if (!userId) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
     }
@@ -54,6 +57,25 @@ export async function POST(request: NextRequest) {
     if (prf_encrypted_vmk && prf_vmk_iv) {
       updateData.prf_encrypted_vmk = prf_encrypted_vmk;
       updateData.prf_vmk_iv = prf_vmk_iv;
+    }
+
+    if (solana_wallet !== undefined) {
+      // User can only set solana_wallet once (when current value is null)
+      const { data: existing } = await supabase
+        .from("users")
+        .select("solana_wallet")
+        .eq("id", userId)
+        .single();
+      if (existing?.solana_wallet) {
+        return NextResponse.json(
+          {
+            error:
+              "Solana wallet already linked; contact support to change it.",
+          },
+          { status: 400 }
+        );
+      }
+      updateData.solana_wallet = solana_wallet;
     }
 
     const { data, error } = await supabase

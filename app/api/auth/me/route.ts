@@ -16,7 +16,7 @@ export async function GET() {
     const { data: user } = await supabase
       .from("users")
       .select(
-        "id, username, email, display_name, kek_salt, vmk_iv, encrypted_vmk, prf_vmk_iv, prf_encrypted_vmk",
+        "id, username, email, display_name, kek_salt, vmk_iv, encrypted_vmk, prf_vmk_iv, prf_encrypted_vmk, solana_wallet"
       )
       .eq("id", session.userId)
       .single();
@@ -46,6 +46,7 @@ export async function GET() {
         prfVmkIv: user.prf_vmk_iv,
         prfEncryptedVmk: user.prf_encrypted_vmk,
         totalXp,
+        solanaWallet: user.solana_wallet ?? undefined,
       },
     });
   } catch (error) {

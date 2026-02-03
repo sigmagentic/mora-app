@@ -28,6 +28,8 @@ import {
   Power,
   KeyRound,
   HelpCircle,
+  Wallet,
+  Check,
 } from "lucide-react";
 import { uint8ToBase64, base64ToUint8 } from "@/lib/utils";
 import { deriveKEK, isPRFSupported } from "@/lib/cryptography";
@@ -48,6 +50,14 @@ import {
   encryptAnswerForSecureStorage,
 } from "@/lib/answer-commitments";
 import { toast } from "@/hooks/use-toast";
+import { useWallet } from "@solana/wallet-adapter-react";
+import { useWalletModal } from "@solana/wallet-adapter-react-ui";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface UserProfileProps {
   user: AppUser;
@@ -87,6 +97,11 @@ export function UserProfile({
   ] = useState(true);
   const [triggerAutoLoginAsCachedPwFound, setTriggerAutoLoginAsCachedPwFound] =
     useState(false);
+  const [savingSolanaWallet, setSavingSolanaWallet] = useState(false);
+
+  const { publicKey, connected, disconnect } = useWallet();
+  const { setVisible: setWalletModalVisible } = useWalletModal();
+  const connectedAddress = publicKey?.toBase58();
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -101,6 +116,56 @@ export function UserProfile({
       console.error("Logout error:", error);
     } finally {
       setIsLoggingOut(false);
+    }
+  };
+
+  // When user has a saved wallet but connects a different one, show error and disconnect
+  useEffect(() => {
+    if (
+      connected &&
+      connectedAddress &&
+      user.solanaWallet &&
+      connectedAddress !== user.solanaWallet
+    ) {
+      toast.error(
+        "Wrong wallet",
+        "This is not the wallet linked to your account. Please connect the same wallet you saved."
+      );
+      disconnect();
+    }
+  }, [connected, connectedAddress, user.solanaWallet, disconnect]);
+
+  const handleConnectSolana = () => {
+    setWalletModalVisible(true);
+  };
+
+  const handleSaveSolanaWallet = async () => {
+    if (!connectedAddress) return;
+    const confirmed = window.confirm(
+      "You can only connect a Solana wallet once to your account. Are you sure you want to save this address?"
+    );
+    if (!confirmed) return;
+    setSavingSolanaWallet(true);
+    try {
+      const formData = new FormData();
+      formData.append("solana_wallet", connectedAddress);
+      const res = await fetch("/api/user/update-user", {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      });
+      const body = await res.json();
+      if (!res.ok) {
+        toast.error("Error", body.error || "Failed to save wallet.");
+        return;
+      }
+      toast.success("Success", "Solana wallet saved to your account.");
+      onRefreshUserServerProfile();
+    } catch (e) {
+      console.error(e);
+      toast.error("Error", "Failed to save wallet.");
+    } finally {
+      setSavingSolanaWallet(false);
     }
   };
 
@@ -1181,6 +1246,57 @@ export function UserProfile({
                 >
                   <HelpCircle className="h-4 w-4" />
                 </Button>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className={`h-9 w-9 rounded-full shrink-0 ${
+                          connected
+                            ? "text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700"
+                            : "text-gray-600 hover:bg-gray-50 hover:text-gray-700"
+                        }`}
+                        onClick={handleConnectSolana}
+                        title={
+                          connected
+                            ? "Solana Connected" +
+                              (connectedAddress
+                                ? ` — ${connectedAddress.slice(
+                                    0,
+                                    4
+                                  )}…${connectedAddress.slice(-4)}`
+                                : "")
+                            : "Connect Solana"
+                        }
+                      >
+                        {connected ? (
+                          <Wallet className="h-4 w-4 shrink-0 text-green" />
+                        ) : (
+                          <Wallet className="h-4 w-4 text-gray-600" />
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">
+                      <p>
+                        {connected
+                          ? "Solana Connected" +
+                            (connectedAddress
+                              ? ` — ${connectedAddress.slice(
+                                  0,
+                                  6
+                                )}…${connectedAddress.slice(-6)}`
+                              : "")
+                          : "Connect Solana (devnet)"}
+                      </p>
+                      {user.solanaWallet && !connected && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Reconnect to use your linked wallet.
+                        </p>
+                      )}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
                 <Button
                   size="icon"
                   variant="ghost"
@@ -1247,6 +1363,81 @@ export function UserProfile({
                       <span className="text-xs mr-2">?</span>
                       About App
                     </Button>
+                    <div className="space-y-2 mb-2">
+                      <span className="text-[10px] text-gray-600 font-medium uppercase tracking-wide">
+                        devnet-only
+                      </span>
+                      <Button
+                        onClick={handleConnectSolana}
+                        variant="outline"
+                        className={`w-full h-10 sm:h-11 text-sm ${
+                          connected
+                            ? "border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+                            : "border-gray-200 text-gray-600 hover:bg-gray-50"
+                        }`}
+                      >
+                        {connected ? (
+                          <>
+                            <Wallet className="h-4 w-4 mr-2 shrink-0 text-green-600" />
+                            Solana Connected
+                          </>
+                        ) : user.solanaWallet ? (
+                          <>
+                            <Wallet className="h-4 w-4 mr-2 shrink-0 text-gray-600" />
+                            Reconnect
+                          </>
+                        ) : (
+                          <>
+                            <Wallet className="h-4 w-4 mr-2 shrink-0 text-gray-600" />
+                            Connect Solana
+                          </>
+                        )}
+                      </Button>
+                      {(connected && connectedAddress) || user.solanaWallet ? (
+                        <p className="text-xs text-gray-500 font-mono break-all px-1">
+                          {connected && connectedAddress
+                            ? `${connectedAddress.slice(
+                                0,
+                                8
+                              )}…${connectedAddress.slice(-8)}`
+                            : user.solanaWallet
+                            ? `${user.solanaWallet.slice(
+                                0,
+                                8
+                              )}…${user.solanaWallet.slice(-8)}`
+                            : ""}
+                        </p>
+                      ) : null}
+                      {connected && connectedAddress && !user.solanaWallet && (
+                        <Button
+                          onClick={handleSaveSolanaWallet}
+                          disabled={savingSolanaWallet}
+                          variant="secondary"
+                          size="sm"
+                          className="w-full text-xs"
+                        >
+                          {savingSolanaWallet ? (
+                            <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                          ) : null}
+                          Save this address to my account
+                        </Button>
+                      )}
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="text-[10px] text-gray-400 cursor-help underline decoration-dotted">
+                              Change linked wallet?
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom" className="max-w-xs">
+                            <p>
+                              You can only link one wallet. To change it later,
+                              contact support.
+                            </p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
                     <Button
                       onClick={handleLogout}
                       disabled={isLoggingOut}

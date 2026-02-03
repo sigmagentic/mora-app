@@ -1,6 +1,6 @@
 {
   "name": "mora-app",
-  "version": "0.0.27",
+  "version": "0.0.28",
   "description": "MORA exists to capture human values the world cannot see — without ever revealing the people behind them.",
   "keywords": [
     "passwordless",
@@ -58,6 +58,11 @@
     "@radix-ui/react-tooltip": "^1.1.2",
     "@simplewebauthn/browser": "^13.2.2",
     "@simplewebauthn/server": "^13.2.2",
+    "@solana/wallet-adapter-base": "^0.9.27",
+    "@solana/wallet-adapter-react": "^0.15.39",
+    "@solana/wallet-adapter-react-ui": "^0.9.39",
+    "@solana/wallet-adapter-wallets": "^0.19.37",
+    "@solana/web3.js": "^1.98.4",
     "@supabase/supabase-js": "^2.53.0",
     "@types/node": "20.6.2",
     "@types/react": "18.2.22",

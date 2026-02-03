@@ -11,6 +11,8 @@ export interface AppUser {
   prfVmkIv?: string;
   prfEncryptedVmk?: string;
   totalXp?: number;
+  /** Solana wallet address (set once by user; admin/support can update) */
+  solanaWallet?: string;
 }
 
 export interface StorageFile {

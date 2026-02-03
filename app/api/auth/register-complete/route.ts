@@ -185,6 +185,7 @@ export async function POST(request: NextRequest) {
         username: user.username,
         email: user.email,
         displayName: user.display_name,
+        solanaWallet: user.solana_wallet ?? undefined,
       },
     });
 

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { AuthForm } from "@/components/auth/auth-form";
 import { UserProfile } from "@/components/auth/user-profile";
+import { SolanaWalletProvider } from "@/components/SolanaWalletProvider";
 import { QuestionPreview } from "@/components/PrivateDataGame/QuestionPreview";
 import { AppUser } from "@/types/types";
 import Image from "next/image";
@@ -102,12 +103,14 @@ export default function Home() {
 
           {user ? (
             <div className="flex justify-center">
-              <UserProfile
-                user={user}
-                prfKek={prfKek}
-                onLogout={handleLogout}
-                onRefreshUserServerProfile={handleRefreshUserServerProfile}
-              />
+              <SolanaWalletProvider>
+                <UserProfile
+                  user={user}
+                  prfKek={prfKek}
+                  onLogout={handleLogout}
+                  onRefreshUserServerProfile={handleRefreshUserServerProfile}
+                />
+              </SolanaWalletProvider>
             </div>
           ) : (
             <div className="grid md:grid-cols-2 gap-6 bgx-red-500">
