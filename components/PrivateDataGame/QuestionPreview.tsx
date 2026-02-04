@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { GameQuestion } from "@/types/types";
 import { QuestionDisplay } from "./QuestionDisplay";
 import { Loader2 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 
 export function QuestionPreview() {
   const [question, setQuestion] = useState<GameQuestion | null>(null);

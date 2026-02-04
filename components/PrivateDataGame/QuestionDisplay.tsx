@@ -31,17 +31,18 @@ export function QuestionDisplay({
         />
       )}
       <p className="text-sm text-gray-700 leading-relaxed">{question.text}</p>
+
       <RadioGroup
         value={selectedAnswer?.id.toString() || ""}
         onValueChange={(value) => {
           if (!disabled && onAnswerChange) {
             const answer = question.answers.find(
-              (a) => a.id.toString() === value,
+              (a) => a.id.toString() === value
             );
 
             // the index of the answer becomes the answer bit (0 or 1)
             const answerIndex = question.answers.findIndex(
-              (a) => a.id === answer?.id,
+              (a) => a.id === answer?.id
             );
 
             if (answer && answerIndex !== -1) {

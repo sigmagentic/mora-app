@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, Key, UserPlus, LogIn, Shield } from "lucide-react";
+import { Loader2, Shield } from "lucide-react";
 import {
   isPRFSupported,
   getCredentialsWithPrf,

@@ -29,7 +29,6 @@ import {
   KeyRound,
   HelpCircle,
   Wallet,
-  Check,
 } from "lucide-react";
 import { uint8ToBase64, base64ToUint8 } from "@/lib/utils";
 import { deriveKEK, isPRFSupported } from "@/lib/cryptography";
@@ -326,7 +325,6 @@ export function UserProfile({
   };
 
   // S: ENCRYPTION PIPELINE
-
   // Step 1: Generate a Vault Master Key (Temp)
   async function generateVMK() {
     return crypto.subtle.generateKey(
@@ -784,16 +782,9 @@ export function UserProfile({
           method: "DELETE",
         }
       );
-      // const res = await fetch(
-      //   `/api/storage/delete-storage?id=${encodeURIComponent(
-      //     fileId
-      //   )}&userId=${encodeURIComponent(user.id)}`,
-      //   {
-      //     method: "DELETE",
-      //   }
-      // );
 
       const body = await res.json();
+
       if (!res.ok) {
         console.error("Delete error:", body);
         toast.error("Error", "Failed to delete file. Please try again.");
@@ -1068,14 +1059,6 @@ export function UserProfile({
     answer: GameQuestionAnswer,
     answerReasoning?: string
   ) => {
-    /*
-      questionId: question.id
-      question: question.text
-      answerId: answer.id
-      answer: answer.text
-      answeredOnTs: Date.now()
-    */
-
     let saveStr = `questionId: ${question.id}\n`;
     saveStr += `question: ${question.text}\n`;
     saveStr += `answerId: ${answer.id}\n`;

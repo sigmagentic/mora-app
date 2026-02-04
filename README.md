@@ -29,7 +29,6 @@ We believe this “moral signal” will become one of the most valuable datasets
 - **🤖 End-to-End Zero Knowledge Design**: frontend and backend built with zero-knowledge principals (NO ONE can see your data EVER!)
 - **🤖 Quantum Resistant data encryption**: data is protected from future quantum attacks (i.e. prevents harvest now-decrypto later attacks)
 - **🤖 Bot Protection**: Integrated Cap.js CAPTCHA system
-- **⚡ Edge Runtime**: Optimized for Cloudflare Pages deployment
 - **🔒 JWT Security**: Secure session management
 - **🌐 Cross-Platform**: Works across devices and browsers
 
@@ -37,16 +36,6 @@ We believe this “moral signal” will become one of the most valuable datasets
 
 - Node.js 20+
 - pnpm (recommended) or npm
-- Supabase account
-- Cloudflare Pages account (for deployment)
-
-## 📞 Support
-
-If you encounter any issues or have questions:
-
-1. Check the [API Integration Guide](./API_INTEGRATION_GUIDE.md)
-2. Search existing [Issues](https://github.com/sigmagentic/mora-app/issues)
-3. Create a new issue with detailed information
 
 ---
 

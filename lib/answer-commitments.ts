@@ -14,10 +14,8 @@ MORA_COMMITMENT_V2
 Old data remains verifiable forever
 
 */
-export const DOMAIN_NULLIFIER  = "MORA_NULLIFIER_V1"
-export const DOMAIN_COMMITMENT = "MORA_COMMITMENT_V1"
-
-
+export const DOMAIN_NULLIFIER = "MORA_NULLIFIER_V1";
+export const DOMAIN_COMMITMENT = "MORA_COMMITMENT_V1";
 
 export async function deriveMoraIdentitySecret(
   vmk: CryptoKey
@@ -26,13 +24,9 @@ export async function deriveMoraIdentitySecret(
   // so we export to raw bytes and re-import as HKDF key material. The VMK must
   // be extractable (it is when decrypted in the app).
   const raw = await crypto.subtle.exportKey("raw", vmk);
-  const hkdfKey = await crypto.subtle.importKey(
-    "raw",
-    raw,
-    "HKDF",
-    false,
-    ["deriveBits"]
-  );
+  const hkdfKey = await crypto.subtle.importKey("raw", raw, "HKDF", false, [
+    "deriveBits",
+  ]);
 
   const derivedBits = await crypto.subtle.deriveBits(
     {
@@ -48,7 +42,7 @@ export async function deriveMoraIdentitySecret(
   return new Uint8Array(derivedBits);
 }
 
-// S: nullifer generation 
+// S: nullifer generation
 // Helper: SHA-256
 export async function sha256(data: Uint8Array): Promise<Uint8Array> {
   const hash = await crypto.subtle.digest("SHA-256", data as any);
@@ -89,10 +83,9 @@ export async function deriveNullifier(
 
   return sha256(data);
 }
-// E: nullifer generation 
+// E: nullifer generation
 
-
-// S: commitment generation 
+// S: commitment generation
 // A = 0, B = 1
 export type AnswerBit = 0 | 1;
 
@@ -120,20 +113,18 @@ export async function deriveCommitment(
   return sha256(data); // uses the same sha256 helper
 }
 
-// E: commitment generation 
-
+// E: commitment generation
 
 // S: final commitment payload generation
 function toHex(bytes: Uint8Array): string {
-  return Array.from(bytes, b => b.toString(16).padStart(2, "0")).join("");
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
 }
-
 
 export type MoraResponsePayload = {
   question_id: number;
   epoch_id: string;
-  nullifier: string;   // hex
-  commitment: string;  // hex
+  nullifier: string; // hex
+  commitment: string; // hex
 };
 
 export async function buildMoraResponsePayload(params: {
@@ -141,7 +132,7 @@ export async function buildMoraResponsePayload(params: {
   questionId: number;
   epochId: string;
   answerBit: 0 | 1;
-}) : Promise<{
+}): Promise<{
   payload: MoraResponsePayload;
   salt: Uint8Array; // keep client-side only
 }> {
@@ -172,12 +163,13 @@ export async function buildMoraResponsePayload(params: {
     salt, // do NOT send to backend
   };
 }
-
 // E: final commitment payload generation
 
-
 // asnwer encryption for secure storage
-export async function encryptAnswerForSecureStorage(plaintext: ArrayBuffer, vmk: CryptoKey): Promise<{ciphertext: ArrayBuffer, iv: Uint8Array}> {
+export async function encryptAnswerForSecureStorage(
+  plaintext: ArrayBuffer,
+  vmk: CryptoKey
+): Promise<{ ciphertext: ArrayBuffer; iv: Uint8Array }> {
   const iv = crypto.getRandomValues(new Uint8Array(12)); // 96-bit IV
 
   const ciphertext = await crypto.subtle.encrypt(

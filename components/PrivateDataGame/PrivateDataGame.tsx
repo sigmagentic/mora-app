@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { GameQuestion, GameQuestionAnswer } from "@/types/types";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { getGameHourSlot, getCurrentDateDDMMYY } from "@/lib/game-epoch";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
