@@ -7,6 +7,10 @@ import { SolanaWalletProvider } from "@/components/SolanaWalletProvider";
 import { QuestionPreview } from "@/components/PrivateDataGame/QuestionPreview";
 import { AppUser } from "@/types/types";
 import Image from "next/image";
+import { PastResults } from "@/components/PrivateDataGame/PastResults";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Play } from "lucide-react";
 
 export default function Home() {
   const [user, setUser] = useState<AppUser | null>(null);
@@ -113,42 +117,66 @@ export default function Home() {
               </SolanaWalletProvider>
             </div>
           ) : (
-            <div className="grid md:grid-cols-2 gap-6 bgx-red-500">
-              <div className="mt-[70px]">
-                <div className="flex justify-center bg-white rounded-full p-[10px] w-fit mx-auto overflow-hidden">
-                  <Image
-                    src="/mora-cat-privacy-logo.png"
-                    alt="MORA Cat Logo"
-                    width={120}
-                    height={60}
-                    className=""
-                  />
-                </div>
-
-                <div className="text-center mb-3">
-                  <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-2 sm:mb-4">
-                    {process.env.NEXT_PUBLIC_APP_TITLE || ""}
-                  </h1>
-                  <div className="max-w-2xl mx-auto space-y-1 sm:space-y-2">
-                    <p className="text-sm sm:text-base lg:text-lg xl:text-xl text-gray-600 leading-relaxed">
-                      <span className="inline-block">
-                        {process.env.NEXT_PUBLIC_APP_DESCRIPTION || ""}
-                      </span>
-                    </p>
-                    <p className="text-xs sm:text-sm text-gray-500 font-normal leading-relaxed">
-                      <span className="inline-block">
-                        {process.env.NEXT_PUBLIC_APP_SUBTITLE || ""}
-                      </span>
-                    </p>
+            <>
+              <div className="grid md:grid-cols-2 gap-6 bgx-red-500">
+                <div className="auth-form mt-[65px]">
+                  <div className="flex justify-center bg-white rounded-full p-[10px] w-fit mx-auto overflow-hidden">
+                    <Image
+                      src="/mora-cat-privacy-logo.png"
+                      alt="MORA Cat Logo"
+                      width={120}
+                      height={60}
+                      className=""
+                    />
                   </div>
-                </div>
 
-                <AuthForm onAuthSuccess={handleAuthSuccess} />
+                  <div className="text-center">
+                    <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-2 sm:mb-4">
+                      {process.env.NEXT_PUBLIC_APP_TITLE || ""}
+                    </h1>
+                    <div className="max-w-2xl mx-auto space-y-1 sm:space-y-2">
+                      <p className="text-sm sm:text-base lg:text-lg xl:text-xl text-gray-600 leading-relaxed">
+                        <span className="inline-block">
+                          {process.env.NEXT_PUBLIC_APP_DESCRIPTION || ""}
+                        </span>
+                      </p>
+                      <p className="text-xs sm:text-sm text-gray-500 font-normal leading-relaxed">
+                        <span className="inline-block">
+                          {process.env.NEXT_PUBLIC_APP_SUBTITLE || ""}
+                        </span>
+                      </p>
+                    </div>
+                    <Button
+                      onClick={() => {
+                        window.open("https://youtu.be/k-jo_bZvu6c", "_blank");
+                      }}
+                      variant="outline"
+                      className="mb-2 w-fit h-8 mt-2 border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 text-xs"
+                    >
+                      <Play className="w-3 h-3 mr-1" />
+                      Demo Video
+                    </Button>
+                  </div>
+
+                  <AuthForm onAuthSuccess={handleAuthSuccess} />
+                </div>
+                <div className="question-preview bgx-blue-500">
+                  <QuestionPreview />
+                </div>
               </div>
-              <div className="">
-                <QuestionPreview />
+              <div className="bgx-green-500 mt-4">
+                <Card className="border-0 shadow-2xl bg-white/95 backdrop-blur-sm">
+                  <CardHeader>
+                    <CardTitle className="text-center text-xl font-bold text-gray-900">
+                      Recent Results
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <PastResults />{" "}
+                  </CardContent>
+                </Card>
               </div>
-            </div>
+            </>
           )}
         </div>
       </div>

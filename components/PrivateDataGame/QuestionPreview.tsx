@@ -100,12 +100,11 @@ export function QuestionPreview() {
   }
 
   if (error || !question) {
-    // Silently fail - don't show error to user, just don't render the preview
     return null;
   }
 
   return (
-    <div className="w-full max-w-md mx-auto px-4 sm:px-0">
+    <div className="w-full max-w-md ml-auto px-4 sm:px-0">
       <Card className="border-0 shadow-2xl bg-white/95 backdrop-blur-sm">
         <CardContent className="pt-4 px-4 sm:px-6">
           <QuestionDisplay
