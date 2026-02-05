@@ -15,7 +15,7 @@ This creates a new class of data:
 
 We believe this “morality" dataset will become one of the most valuable datasets for AI alignment, safety, and reasoning — precisely because it cannot be extracted any other way.
 
-[>> MORA is built as a fun and addictive game. Watch a 3 Min Pitch on how it works](https://youtu.be/k-jo_bZvu6c)
+**MORA is built as a fun and addictive game.** <a href="https://youtu.be/k-jo_bZvu6c" target="_blank">Watch a 3 Min Pitch on how it works</a>
 
 ## ✨ Features
 
@@ -27,9 +27,9 @@ We believe this “morality" dataset will become one of the most valuable datase
 - **🔑 Bot Protection**: Integrated Cap.js CAPTCHA system
 - **🔑 Cross-Platform**: Works across devices and browsers and soon to become a progressive web app (PWA) for mobile-native type access
 
-## ✨ Arcium MXE
+## ✨ Arcium MXE (Private Aggregation of Sensitive Morality Data)
 
-As mentioned above, this MORA app is connected to a 'backend' [Arcium MXE](https://docs.arcium.com/multi-party-execution-environments-mxes/overview). This MXE allows us to store encrypted private data in a `Solana Program` that then interfaces with the `Arcium Network`. The system can aggregate encrypted private data and then "reveal" the winning answers for each morality question. As everything is "encrypted and private", no data or identity is EVER leaked. And yet, we are able to use this private and verifiable aggregation to compose other monetization layers on top of MORA. For e.g., we are working on integrating a "morality prediction market" where people can bet on certain moral signals of the collective MORA userbase who answer highly sensitive moral questions. As the "winning" answers are private and yet provable, this allows the entire MORA stack to be private, zero-knowledge but yet be able to monetize with a fun game-type offering. The Arcium MXE has been deployed to devnet and is being upgraded soon to support future integration with production market. The MORA MXE is also open-source: [https://github.com/sigmagentic/mora-mxe](https://github.com/sigmagentic/mora-mxe)
+As mentioned above, this MORA app is connected to a 'backend' <a href="https://docs.arcium.com/multi-party-execution-environments-mxes/overview" target="_blank">Arcium MXE</a>. This MXE allows us to store encrypted private data in a `Solana Program` that then interfaces with the `Arcium Network`. The system can aggregate encrypted private data and then "reveal" the winning answers for each morality question. As everything is "encrypted and private", no data or identity is EVER leaked. And yet, we are able to use this private and verifiable aggregation to compose other monetization layers on top of MORA. For e.g., we are working on integrating a "morality prediction market" where people can bet on certain moral signals of the collective MORA userbase who answer highly sensitive moral questions. As the "winning" answers are private and yet provable, this allows the entire MORA stack to be private, zero-knowledge but yet be able to monetize with a fun game-type offering. The Arcium MXE has been deployed to devnet and is being upgraded soon to support future integration with production market. The MORA MXE is also open-source: <a href="https://github.com/sigmagentic/mora-mxe" target="_blank">https://github.com/sigmagentic/mora-mxe</a>
 
 ### Prerequisites
 
