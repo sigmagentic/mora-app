@@ -10,8 +10,6 @@ import {
   getOpensAtDay,
   getClosesAtDay,
   toTimestampStr,
-  getGameHourSlot,
-  getArciumHourForDay,
 } from "@/lib/game-epoch";
 import { addNewQuestionAnswerSet } from "@/app/manage/dash/actions";
 
@@ -36,15 +34,14 @@ export async function GET(request: NextRequest) {
     let bypassAllLoggedInLogic = false;
     let activeQuestionData: GameQuestion | null = null;
     let dailyQuestionData: DailyRow | null = null;
-    /** Set when we promote a UPCOMING to ACTIVE and tag it as Arcium. */
-    let promotedArciumPollId: number | undefined;
 
+    // We need a sample, finalized quesion as a demo for the homepage
     if (giveSampleQuestion && giveSampleQuestion === "1") {
-      // lets check for aoptional query string param called "give_sample_question"
-      // ... if this exists then just query the questions_repo and get the item with game_status FINALIZED
-      // ... and closes_at is the most recent one (i.e. the most recently closed question)
-      // ... once we get this, just bypass all the logic below and return it with the answers as well
-      // ... this is for testing purposes only and should not be used in production
+      /* lets check for aoptional query string param called "give_sample_question"
+      ... if this exists then just query the questions_repo and get the item with game_status FINALIZED
+      ... and closes_at is the most recent one (i.e. the most recently closed question)
+      ... once we get this, just bypass all the logic below and return it with the answers as well
+      ... this is for testing purposes only and should not be used in production */
       const { data: sampleQuestionData, error: sampleQuestionError } =
         await supabase
           .from("questions_repo")
@@ -60,8 +57,6 @@ export async function GET(request: NextRequest) {
           { status: 500 }
         );
       }
-
-      console.log("sampleQuestionData >>>>", sampleQuestionData);
 
       bypassAllLoggedInLogic = true;
       activeQuestionData = sampleQuestionData[0];
@@ -84,6 +79,7 @@ export async function GET(request: NextRequest) {
         .from("questions_repo")
         .select("id")
         .eq("game_status", "ACTIVE_ARCIUM");
+
       if (expiredArcium?.length) {
         for (const row of expiredArcium) {
           const { data: q } = await supabase
@@ -199,15 +195,6 @@ export async function GET(request: NextRequest) {
             .order("created_at", { ascending: false }) // Get most recently added UPCOMING
             .limit(1)
             .single();
-
-        //// dormantError also throws if there are no rows, so we can't use it to detect DB fetch errors
-        // if (dormantError) {
-        //   console.error("Error fetching UPCOMING question:", dormantError);
-        //   return NextResponse.json(
-        //     { error: "E3 : No questions available" },
-        //     { status: 500 },
-        //   );
-        // }
 
         /*
         if there are no UPCOMING questions, then let's create a cyclic gameplay
@@ -342,7 +329,7 @@ export async function GET(request: NextRequest) {
               result.questionId
             );
 
-            // OK, we can now
+            // OK, we can now fetch the new question that we just added...
             const { data: dormantQuestionData, error: dormantError } =
               await supabase
                 .from("questions_repo")
@@ -385,23 +372,13 @@ export async function GET(request: NextRequest) {
         const opensAt = getOpensAt(now);
         const closesAt = getClosesAt(now);
 
-        // At most 1 Arcium question per day: stateless pick of the designated hour for today.
-        const isArciumHour = getGameHourSlot(now) === getArciumHourForDay(now);
-        if (isArciumHour) {
-          promotedArciumPollId =
-            Math.floor(Math.random() * 9000) +
-            1000; /* 1000-9999, placeholder until Arcium integration */
-        }
-
+        // we dont need arcium for hourly polls anymore as we moved this to the daily poll
         const updatePayload: Record<string, unknown> = {
           game_status: "ACTIVE",
           epoch_id: _isActiveHHDDMMYY,
           opens_at: toTimestampStr(opensAt),
           closes_at: toTimestampStr(closesAt),
         };
-        if (promotedArciumPollId != null) {
-          updatePayload.arcium_poll_id = promotedArciumPollId;
-        }
 
         const { error: updateError } = await supabase
           .from("questions_repo")
@@ -438,25 +415,32 @@ export async function GET(request: NextRequest) {
           .select("text")
           .eq("question_id", activeQuestionData.id)
           .order("id");
+
         let clonedAnswers: { text: string }[] = (hourlyAnswers ?? []).map(
           (a: { text: string }) => ({ text: a.text })
         );
+
         if (clonedAnswers.length === 2 && Math.random() < 0.5) {
           clonedAnswers = [...clonedAnswers].reverse();
         }
+
         const newQuestion = {
           title: activeQuestionData.title ?? null,
           img: activeQuestionData.img ?? null,
           text: activeQuestionData.text,
           answers: clonedAnswers,
         };
+
         const result = await addNewQuestionAnswerSet(
           JSON.stringify(newQuestion)
         );
+
         if ("success" in result && result.success && result.questionId) {
-          const dailyArciumPollId = Math.floor(Math.random() * 9000) + 1000;
+          const nextDailyArciumPollId = Math.floor(Math.random() * 9000) + 1000;
+
           const opensAtDay = getOpensAtDay(now);
           const closesAtDay = getClosesAtDay(now);
+
           const { error: updateDailyErr } = await supabase
             .from("questions_repo")
             .update({
@@ -464,15 +448,17 @@ export async function GET(request: NextRequest) {
               epoch_id: _dayEpoch,
               opens_at: toTimestampStr(opensAtDay),
               closes_at: toTimestampStr(closesAtDay),
-              arcium_poll_id: dailyArciumPollId,
+              arcium_poll_id: nextDailyArciumPollId,
             })
             .eq("id", result.questionId);
+
           if (!updateDailyErr) {
             const { data: newDailyRow } = await supabase
               .from("questions_repo")
               .select("*")
               .eq("id", result.questionId)
               .single();
+
             if (newDailyRow) {
               dailyQuestionData = newDailyRow as DailyRow;
             }
@@ -488,15 +474,16 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get answers for the hourly (ACTIVE) question
+    // Get answers for the active question
     const { data: answersData, error: answersError } = await supabase
       .from("question_answers")
       .select("*")
       .eq("question_id", activeQuestionData?.id)
-      .order("id"); // Assuming insertion order
+      .order("id");
 
     if (answersError) {
       console.error("Error fetching answers:", answersError);
+
       return NextResponse.json(
         { error: "Error fetching answers" },
         { status: 500 }
@@ -511,9 +498,7 @@ export async function GET(request: NextRequest) {
       })
     );
 
-    // Construct hourlyActive (DB uses snake_case arcium_poll_id)
-    const dbRow = activeQuestionData as { arcium_poll_id?: number };
-    const arciumPollId = dbRow.arcium_poll_id ?? promotedArciumPollId;
+    // Construct hourlyActive
     const hourlyActive: GameQuestion = {
       id: activeQuestionData.id,
       title: activeQuestionData.title,
@@ -524,11 +509,11 @@ export async function GET(request: NextRequest) {
       game_status: activeQuestionData.game_status,
       epoch_id: activeQuestionData.epoch_id,
       answers,
-      ...(arciumPollId != null && { arciumPollId }),
     };
 
     // Build dailyActive from ACTIVE_ARCIUM row if present
     let dailyActive: GameQuestion | null = null;
+
     if (dailyQuestionData) {
       const { data: dailyAnswersData, error: dailyAnswersError } =
         await supabase
@@ -536,13 +521,26 @@ export async function GET(request: NextRequest) {
           .select("*")
           .eq("question_id", dailyQuestionData.id)
           .order("id");
+
       if (!dailyAnswersError && dailyAnswersData?.length) {
         const dailyAnswers: GameQuestionAnswer[] = dailyAnswersData.map(
           (ans: GameQuestionAnswer) => ({ id: ans.id, text: ans.text })
         );
-        const dailyArciumId =
-          dailyQuestionData.arcium_poll_id ??
-          Math.floor(Math.random() * 9000) + 1000;
+
+        const nextDailyArciumPollId = dailyQuestionData.arcium_poll_id;
+
+        if (!nextDailyArciumPollId) {
+          console.error(
+            "Error fetching daily Arcium poll ID:",
+            dailyQuestionData
+          );
+
+          return NextResponse.json(
+            { error: "Error fetching daily Arcium poll ID" },
+            { status: 500 }
+          );
+        }
+
         dailyActive = {
           id: dailyQuestionData.id,
           title: dailyQuestionData.title ?? undefined,
@@ -553,7 +551,7 @@ export async function GET(request: NextRequest) {
           game_status: dailyQuestionData.game_status ?? "",
           epoch_id: dailyQuestionData.epoch_id ?? "",
           answers: dailyAnswers,
-          arciumPollId: dailyArciumId,
+          arciumPollId: nextDailyArciumPollId,
         };
       }
     }
