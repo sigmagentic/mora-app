@@ -36,6 +36,22 @@ As mentioned above, this MORA app is connected to a 'backend' <a href="https://d
 - Node.js 20+
 - pnpm (recommended) or npm
 
+### Error Codes
+
+```
+API:
+ERR-ARCIUM-001: Missing SOLANA_PRC_URL_PRIVATE
+ERR-ARCIUM-002: Missing ARCIUM_POLL_AUTHORITY_WALLET
+ERR-ARCIUM-003: Failed to decode wallet from base64
+ERR-ARCIUM-004: Invalid wallet secret key length
+ERR-ARCIUM-005: General initialization error
+ERR-ARCIUM-006: Failed to initialize cluster or MXE
+ERR-ARCIUM-007: Failed to fetch MXE public key after retries
+ERR-ARCIUM-008 through ERR-ARCIUM-010: Database query errors
+ERR-ARCIUM-011: Interface not properly initialized
+ERR-ARCIUM-012: Error creating on-chain poll
+```
+
 ---
 
 **Built with ❤️ for the ethical AI future**

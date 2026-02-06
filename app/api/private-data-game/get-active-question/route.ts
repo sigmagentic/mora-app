@@ -12,8 +12,16 @@ import {
   toTimestampStr,
 } from "@/lib/game-epoch";
 import { addNewQuestionAnswerSet } from "@/app/manage/dash/actions";
+import {
+  createNewOnChainArciumPoll,
+  getNextArciumPollId,
+} from "@/app/api/private-data-game/arcium-mxe-logic/arcium-mxe-logic";
 
-export const runtime = "edge";
+// Using Node.js runtime instead of edge because:
+// - @arcium-hq/client requires Node.js crypto module
+// - @coral-xyz/anchor and Solana libraries need Node.js APIs
+// Edge runtime doesn't support Node.js built-in modules
+export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
   try {
@@ -304,9 +312,7 @@ export async function GET(request: NextRequest) {
             answers: clonedAndShuffledAnswers,
           };
 
-          console.log("newQuestion >>>>", newQuestion);
-
-          // can we call addNewQuestionAnswerSet to insert the new question and answers into the database?
+          // (New Hourly Poll) Here is where we add the new Quesion that will be soon updated to ACTIVE
           const result = await addNewQuestionAnswerSet(
             JSON.stringify(newQuestion)
           );
@@ -406,12 +412,6 @@ export async function GET(request: NextRequest) {
         .limit(1)
         .maybeSingle();
 
-      const nextDailyArciumPollId = await getNextArciumPollId();
-      console.log(
-        "ARCIUM: 1 nextDailyArciumPollId >>>>",
-        nextDailyArciumPollId
-      );
-
       if (existingDailyRow) {
         dailyQuestionData = existingDailyRow as DailyRow;
       } else if (activeQuestionData) {
@@ -437,6 +437,7 @@ export async function GET(request: NextRequest) {
           answers: clonedAnswers,
         };
 
+        // (New Daily Poll) Here is where we add the new Quesion that will be soon updated to ACTIVE_ARCIUM
         const result = await addNewQuestionAnswerSet(
           JSON.stringify(newQuestion)
         );
@@ -456,29 +457,62 @@ export async function GET(request: NextRequest) {
             // Continue without creating daily question - hourlyActive will still be returned
             dailyQuestionData = null;
           } else {
-            const opensAtDay = getOpensAtDay(now);
-            const closesAtDay = getClosesAtDay(now);
+            // Create on-chain Arcium poll
+            const pollQuestionText = activeQuestionData.text || "";
 
-            const { error: updateDailyErr } = await supabase
-              .from("questions_repo")
-              .update({
-                game_status: "ACTIVE_ARCIUM",
-                epoch_id: _dayEpoch,
-                opens_at: toTimestampStr(opensAtDay),
-                closes_at: toTimestampStr(closesAtDay),
-                arcium_poll_id: nextDailyArciumPollId,
-              })
-              .eq("id", result.questionId);
+            // bypass for now...
+            const polSig = "1234567890";
+            const finalizedPolSig = "1234567890";
+            const error = false;
+            const errorMessage = "";
 
-            if (!updateDailyErr) {
-              const { data: newDailyRow } = await supabase
+            // const { polSig, finalizedPolSig, error, errorMessage } =
+            //   await createNewOnChainArciumPoll(
+            //     nextDailyArciumPollId,
+            //     pollQuestionText,
+            //     result.questionId
+            //   );
+
+            if (error) {
+              console.error(
+                "Error creating new on chain arcium poll:",
+                errorMessage
+              );
+              dailyQuestionData = null; // let's not update the database with the new question as ACTIVE_ARCIUM as it will be deleted from the database
+
+              return NextResponse.json(
+                { error: errorMessage },
+                { status: 500 }
+              );
+            }
+
+            if (!dailyQuestionData) {
+              const opensAtDay = getOpensAtDay(now);
+              const closesAtDay = getClosesAtDay(now);
+
+              const { error: updateDailyErr } = await supabase
                 .from("questions_repo")
-                .select("*")
-                .eq("id", result.questionId)
-                .single();
+                .update({
+                  game_status: "ACTIVE_ARCIUM",
+                  epoch_id: _dayEpoch,
+                  opens_at: toTimestampStr(opensAtDay),
+                  closes_at: toTimestampStr(closesAtDay),
+                  arcium_poll_id: nextDailyArciumPollId,
+                  arcium_pol_sig: polSig,
+                  arcium_finalized_pol_sig: finalizedPolSig,
+                })
+                .eq("id", result.questionId);
 
-              if (newDailyRow) {
-                dailyQuestionData = newDailyRow as DailyRow;
+              if (!updateDailyErr) {
+                const { data: newDailyRow } = await supabase
+                  .from("questions_repo")
+                  .select("*")
+                  .eq("id", result.questionId)
+                  .single();
+
+                if (newDailyRow) {
+                  dailyQuestionData = newDailyRow as DailyRow;
+                }
               }
             }
           }
@@ -579,44 +613,5 @@ export async function GET(request: NextRequest) {
       { error: "Internal server error" },
       { status: 500 }
     );
-  }
-}
-
-/**
- * Gets the next Arcium poll ID by finding the highest existing arcium_poll_id
- * in questions_repo and adding 1. Returns null on error.
- */
-async function getNextArciumPollId(): Promise<number | null> {
-  try {
-    const { data, error } = await supabase
-      .from("questions_repo")
-      .select("arcium_poll_id")
-      .not("arcium_poll_id", "is", null)
-      .order("arcium_poll_id", { ascending: false })
-      .limit(1);
-
-    if (error) {
-      console.error("Error fetching max arcium_poll_id:", error);
-      return null;
-    }
-
-    if (!data || data.length === 0) {
-      // No existing arcium_poll_id found, start at 1
-      return 1;
-    }
-
-    const maxId = data[0]?.arcium_poll_id as number | undefined;
-
-    if (typeof maxId !== "number") {
-      console.error("Invalid max arcium_poll_id:", maxId);
-      return null;
-    }
-
-    console.log("ARCIUM: current max arcium_poll_id >>>>", maxId);
-
-    return maxId + 1;
-  } catch (err) {
-    console.error("Error in getNextArciumPollId:", err);
-    return null;
   }
 }

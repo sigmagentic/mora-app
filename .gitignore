@@ -82,3 +82,4 @@ docs/
 API_INTEGRATION_GUIDE.md
 ENV_CONFIG.md
 supabase/
+bin/
