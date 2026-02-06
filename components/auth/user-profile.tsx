@@ -1217,7 +1217,7 @@ export function UserProfile({
                   <ChevronRight className="h-4 w-4 hidden md:block" />
                   <ChevronDown className="h-4 w-4 block md:hidden" />
                 </Button>
-                <p className="text-xs text-gray-500 font-normal leading-relaxed">
+                <p className="text-xs text-gray-500 font-normal leading-relaxed text-center">
                   {user?.totalXp || 0} XP
                 </p>
                 <Button
