@@ -400,7 +400,7 @@ export function PrivateDataGame({
           ) : (
             <>
               <div className="text-[9px] md:text-xs text-black">
-                {dailyPlayed ? "Live & Played!" : "Live Now!"}
+                {dailyPlayed ? " ✅ Live & Played!" : "🟢 Live Now!"}
               </div>
               <div className="text-[9px] md:text-xs text-green-700 dark:text-green-400 mt-0.5">
                 Next question in: {dailyCountdown}
@@ -469,7 +469,9 @@ export function PrivateDataGame({
                 )}
                 {isActive && (
                   <div className="text-[9px] md:text-xs text-black space-y-0.5">
-                    <div>{isPlayed ? "Live & Played!" : "Live Now!"}</div>
+                    <div>
+                      {isPlayed ? " ✅ Live & Played!" : "🟢 Live Now!"}
+                    </div>
                     {isArciumActive && (
                       <div className="font-semibold text-violet-700 text-[9px]">
                         ✨ Arcium Verifiable
