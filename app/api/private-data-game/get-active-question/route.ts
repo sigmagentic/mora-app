@@ -23,6 +23,9 @@ import {
 // Edge runtime doesn't support Node.js built-in modules
 export const runtime = "nodejs";
 
+// Opt out of static generation: this route uses request.url and must run at request time
+export const dynamic = "force-dynamic";
+
 export async function GET(request: NextRequest) {
   try {
     const url = new URL(request.url);
