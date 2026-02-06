@@ -31,6 +31,50 @@ export function getCurrentDateDDMMYY(now: Date): string {
   return `${dd}-${mm}-${yy}`;
 }
 
+/** Day-only epoch id "00" + DDMMYY for ACTIVE_ARCIUM (8 chars, distinct from hourly HHDDMMYY). */
+export function getEpochIdForDay(now: Date): string {
+  const ddmmyy = getCurrentDateDDMMYY(now).replace(/-/g, "");
+  return `00${ddmmyy}`;
+}
+
+/** Start of current UTC day (for ACTIVE_ARCIUM opens_at). */
+export function getOpensAtDay(now: Date): Date {
+  return new Date(
+    Date.UTC(
+      now.getUTCFullYear(),
+      now.getUTCMonth(),
+      now.getUTCDate(),
+      0,
+      0,
+      0,
+      0
+    )
+  );
+}
+
+/** End of current UTC day (for ACTIVE_ARCIUM closes_at). */
+export function getClosesAtDay(now: Date): Date {
+  return new Date(
+    Date.UTC(
+      now.getUTCFullYear(),
+      now.getUTCMonth(),
+      now.getUTCDate(),
+      23,
+      59,
+      59,
+      999
+    )
+  );
+}
+
+/** Start of next UTC day (00:00:00.000) — when the next daily question becomes available. */
+export function getNextDayStartsAt(now: Date): Date {
+  const next = new Date(now);
+  next.setUTCDate(next.getUTCDate() + 1);
+  next.setUTCHours(0, 0, 0, 0);
+  return next;
+}
+
 /**
  * Start of current UTC hour (for opens_at). Uses real UTC components (0–11 month, 0–23 hour).
  * Game slots 1–24 are for epoch_id/display only; timestamps use actual UTC.

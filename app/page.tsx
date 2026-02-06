@@ -98,7 +98,7 @@ export default function Home() {
                     {process.env.NEXT_PUBLIC_APP_DESCRIPTION || ""}
                   </span>
                 </p>
-                <p className="text-xs text-gray-500 font-normal leading-relaxed w-full hidden md:block text-center">
+                <p className="text-xs text-gray-500 font-normal leading-relaxed w-full hidden md:block text-center md:text-left">
                   {process.env.NEXT_PUBLIC_APP_SUBTITLE || ""}
                 </p>
               </div>

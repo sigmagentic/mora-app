@@ -1070,6 +1070,10 @@ export function UserProfile({
 
     saveStr += `answeredOnTs: ${Date.now()}\n`;
 
+    if (question.arciumPollId != null) {
+      saveStr += `arciumPollId: ${question.arciumPollId}\n`;
+    }
+
     saveStr = saveStr + "\n" + newSecureNoteSession;
 
     console.log(saveStr);
@@ -1499,6 +1503,11 @@ export function UserProfile({
                               ONLY 24 questions asked per day. A new one
                               unlocked each UTC hour. Click on the "Live Now"
                               tile below to answer the question.
+                              <br />
+                              <br />A special daily Arcium-Enabled Morality
+                              Question is also unlocked every day. The results
+                              of this question are aggregated privately and
+                              verifiably using the Arcium Network.
                             </PopoverContent>
                           </Popover>
                         </CardTitle>

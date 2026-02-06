@@ -4,8 +4,11 @@ import { GameQuestion, GameQuestionAnswer } from "@/types/types";
 import { getServerSession } from "@/lib/auth-utils";
 import {
   getEpochId,
+  getEpochIdForDay,
   getOpensAt,
   getClosesAt,
+  getOpensAtDay,
+  getClosesAtDay,
   toTimestampStr,
   getGameHourSlot,
   getArciumHourForDay,
@@ -19,8 +22,20 @@ export async function GET(request: NextRequest) {
     const url = new URL(request.url);
     const giveSampleQuestion = url.searchParams.get("give_sample_question");
 
+    type DailyRow = {
+      id: number;
+      title: string | null;
+      img: string | null;
+      text: string;
+      opens_at: string | null;
+      closes_at: string | null;
+      game_status: string;
+      epoch_id: string | null;
+      arcium_poll_id?: number;
+    };
     let bypassAllLoggedInLogic = false;
     let activeQuestionData: GameQuestion | null = null;
+    let dailyQuestionData: DailyRow | null = null;
     /** Set when we promote a UPCOMING to ACTIVE and tag it as Arcium. */
     let promotedArciumPollId: number | undefined;
 
@@ -53,7 +68,6 @@ export async function GET(request: NextRequest) {
     }
 
     if (!bypassAllLoggedInLogic) {
-      // normal flow...
       const session = await getServerSession();
 
       if (!session) {
@@ -62,6 +76,33 @@ export async function GET(request: NextRequest) {
 
       const now = new Date();
       const _isActiveHHDDMMYY = getEpochId(now); // HHDDMMYY, hour 1–24, month 1–12
+      const _dayEpoch = getEpochIdForDay(now); // 00DDMMYY for daily Arcium
+
+      // Close expired ACTIVE_ARCIUM (wrong day or closes_at passed)
+      const nowStr = toTimestampStr(now);
+      const { data: expiredArcium } = await supabase
+        .from("questions_repo")
+        .select("id")
+        .eq("game_status", "ACTIVE_ARCIUM");
+      if (expiredArcium?.length) {
+        for (const row of expiredArcium) {
+          const { data: q } = await supabase
+            .from("questions_repo")
+            .select("epoch_id, closes_at")
+            .eq("id", row.id)
+            .single();
+          if (
+            q &&
+            (q.epoch_id !== _dayEpoch ||
+              (q.closes_at && String(q.closes_at) < nowStr))
+          ) {
+            await supabase
+              .from("questions_repo")
+              .update({ game_status: "AGGREGATING_ARCIUM" })
+              .eq("id", row.id);
+          }
+        }
+      }
 
       /*
       Ultimate goal: ONLY EVER one ACTIVE question at a time with epoch_id === _isActiveHHDDMMYY.
@@ -170,7 +211,7 @@ export async function GET(request: NextRequest) {
 
         /*
         if there are no UPCOMING questions, then let's create a cyclic gameplay
-        ... let's get a random FINALIZED question 
+        ... let's get a random FINALIZED or AGGREGATING question 
         ... make a copy of that and also get it's answers and make a copy of that
         ... from the copies, remove the id, epoch_id, opens_at, closes_at and created_at from the question and set game_status to UPCOMING
         ... and from the answers, remove the id and question_id
@@ -194,14 +235,14 @@ export async function GET(request: NextRequest) {
             "NO UPCOMING QUESTIONS FOUND, CREATING A CYCLIC GAMEPLAY"
           );
 
-          // Supabase .order() only accepts column names, not RANDOM(). Fetch FINALIZED and pick one in JS.
+          // Supabase .order() only accepts column names, not RANDOM(). Fetch FINALIZED/AGGREGATING and pick one in JS.
           const {
             data: finalizedQuestions,
             error: randomPrevFinalizedQuestionError,
           } = await supabase
             .from("questions_repo")
             .select("*")
-            .eq("game_status", "FINALIZED");
+            .in("game_status", ["FINALIZED", "AGGREGATING"]);
 
           const randomPrevFinalizedQuestionData =
             finalizedQuestions && finalizedQuestions.length > 0
@@ -345,11 +386,11 @@ export async function GET(request: NextRequest) {
         const closesAt = getClosesAt(now);
 
         // At most 1 Arcium question per day: stateless pick of the designated hour for today.
-        const isArciumHour =
-          getGameHourSlot(now) === getArciumHourForDay(now);
+        const isArciumHour = getGameHourSlot(now) === getArciumHourForDay(now);
         if (isArciumHour) {
           promotedArciumPollId =
-            Math.floor(Math.random() * 9000) + 1000; /* 1000-9999, placeholder until Arcium integration */
+            Math.floor(Math.random() * 9000) +
+            1000; /* 1000-9999, placeholder until Arcium integration */
         }
 
         const updatePayload: Record<string, unknown> = {
@@ -378,6 +419,66 @@ export async function GET(request: NextRequest) {
         // Close other ACTIVE (previous epoch) so we keep only one ACTIVE per epoch (rule 5).
         await closeOtherActive();
       }
+
+      // Resolve daily ACTIVE_ARCIUM (at most one per UTC day)
+      const { data: existingDailyRow } = await supabase
+        .from("questions_repo")
+        .select("*")
+        .eq("game_status", "ACTIVE_ARCIUM")
+        .eq("epoch_id", _dayEpoch)
+        .limit(1)
+        .maybeSingle();
+
+      if (existingDailyRow) {
+        dailyQuestionData = existingDailyRow as DailyRow;
+      } else if (activeQuestionData) {
+        // Clone current hourly question into a new row and set as ACTIVE_ARCIUM
+        const { data: hourlyAnswers } = await supabase
+          .from("question_answers")
+          .select("text")
+          .eq("question_id", activeQuestionData.id)
+          .order("id");
+        let clonedAnswers: { text: string }[] = (hourlyAnswers ?? []).map(
+          (a: { text: string }) => ({ text: a.text })
+        );
+        if (clonedAnswers.length === 2 && Math.random() < 0.5) {
+          clonedAnswers = [...clonedAnswers].reverse();
+        }
+        const newQuestion = {
+          title: activeQuestionData.title ?? null,
+          img: activeQuestionData.img ?? null,
+          text: activeQuestionData.text,
+          answers: clonedAnswers,
+        };
+        const result = await addNewQuestionAnswerSet(
+          JSON.stringify(newQuestion)
+        );
+        if ("success" in result && result.success && result.questionId) {
+          const dailyArciumPollId = Math.floor(Math.random() * 9000) + 1000;
+          const opensAtDay = getOpensAtDay(now);
+          const closesAtDay = getClosesAtDay(now);
+          const { error: updateDailyErr } = await supabase
+            .from("questions_repo")
+            .update({
+              game_status: "ACTIVE_ARCIUM",
+              epoch_id: _dayEpoch,
+              opens_at: toTimestampStr(opensAtDay),
+              closes_at: toTimestampStr(closesAtDay),
+              arcium_poll_id: dailyArciumPollId,
+            })
+            .eq("id", result.questionId);
+          if (!updateDailyErr) {
+            const { data: newDailyRow } = await supabase
+              .from("questions_repo")
+              .select("*")
+              .eq("id", result.questionId)
+              .single();
+            if (newDailyRow) {
+              dailyQuestionData = newDailyRow as DailyRow;
+            }
+          }
+        }
+      }
     }
 
     if (!activeQuestionData) {
@@ -387,7 +488,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get answers for the selected question
+    // Get answers for the hourly (ACTIVE) question
     const { data: answersData, error: answersError } = await supabase
       .from("question_answers")
       .select("*")
@@ -410,10 +511,10 @@ export async function GET(request: NextRequest) {
       })
     );
 
-    // Construct the GameQuestion object (DB uses snake_case arcium_poll_id)
+    // Construct hourlyActive (DB uses snake_case arcium_poll_id)
     const dbRow = activeQuestionData as { arcium_poll_id?: number };
     const arciumPollId = dbRow.arcium_poll_id ?? promotedArciumPollId;
-    const activeQuestion: GameQuestion = {
+    const hourlyActive: GameQuestion = {
       id: activeQuestionData.id,
       title: activeQuestionData.title,
       img: activeQuestionData.img,
@@ -426,7 +527,38 @@ export async function GET(request: NextRequest) {
       ...(arciumPollId != null && { arciumPollId }),
     };
 
-    return NextResponse.json({ activeQuestion });
+    // Build dailyActive from ACTIVE_ARCIUM row if present
+    let dailyActive: GameQuestion | null = null;
+    if (dailyQuestionData) {
+      const { data: dailyAnswersData, error: dailyAnswersError } =
+        await supabase
+          .from("question_answers")
+          .select("*")
+          .eq("question_id", dailyQuestionData.id)
+          .order("id");
+      if (!dailyAnswersError && dailyAnswersData?.length) {
+        const dailyAnswers: GameQuestionAnswer[] = dailyAnswersData.map(
+          (ans: GameQuestionAnswer) => ({ id: ans.id, text: ans.text })
+        );
+        const dailyArciumId =
+          dailyQuestionData.arcium_poll_id ??
+          Math.floor(Math.random() * 9000) + 1000;
+        dailyActive = {
+          id: dailyQuestionData.id,
+          title: dailyQuestionData.title ?? undefined,
+          img: dailyQuestionData.img ?? undefined,
+          text: dailyQuestionData.text ?? "",
+          opens_at: dailyQuestionData.opens_at ?? "",
+          closes_at: dailyQuestionData.closes_at ?? "",
+          game_status: dailyQuestionData.game_status ?? "",
+          epoch_id: dailyQuestionData.epoch_id ?? "",
+          answers: dailyAnswers,
+          arciumPollId: dailyArciumId,
+        };
+      }
+    }
+
+    return NextResponse.json({ hourlyActive, dailyActive });
   } catch (err) {
     console.error("get-active-question error:", err);
     return NextResponse.json(

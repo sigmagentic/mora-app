@@ -19,10 +19,7 @@ export async function POST(request: NextRequest) {
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json(
-      { error: "Invalid JSON body" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
   const epochId = body?.epoch_id?.trim();
   if (!epochId) {
@@ -52,10 +49,7 @@ export async function POST(request: NextRequest) {
 
     if (fetchErr) {
       console.error("aggregate-commitments fetch error:", fetchErr);
-      return NextResponse.json(
-        { error: fetchErr.message },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: fetchErr.message }, { status: 500 });
     }
 
     if (!commitments?.length) {
@@ -77,7 +71,13 @@ export async function POST(request: NextRequest) {
     const winningAnswer = answerACount >= answerBCount ? 0 : 1;
     const aggregationCommitment = `${epochId}_${totalResponses}_${winningAnswer}`;
 
-    const { error: insertErr } = await supabase.from("question_aggregates").insert({
+    const { data: questionRow } = await supabase
+      .from("questions_repo")
+      .select("arcium_poll_id")
+      .eq("id", questionId)
+      .maybeSingle();
+
+    const insertPayload: Record<string, unknown> = {
       question_id: questionId,
       epoch_id: epochId,
       total_responses: totalResponses,
@@ -86,14 +86,20 @@ export async function POST(request: NextRequest) {
       winning_answer: winningAnswer,
       aggregation_commitment: aggregationCommitment,
       aggregation_source: "DB",
-    });
+    };
+    const arciumPollId = (questionRow as { arcium_poll_id?: number } | null)
+      ?.arcium_poll_id;
+    if (arciumPollId != null) {
+      insertPayload.arcium_poll_id = arciumPollId;
+    }
+
+    const { error: insertErr } = await supabase
+      .from("question_aggregates")
+      .insert(insertPayload);
 
     if (insertErr) {
       console.error("aggregate-commitments insert error:", insertErr);
-      return NextResponse.json(
-        { error: insertErr.message },
-        { status: 500 }
-      );
+      return NextResponse.json({ error: insertErr.message }, { status: 500 });
     }
 
     const { error: updateErr } = await supabase
@@ -102,11 +108,11 @@ export async function POST(request: NextRequest) {
       .eq("epoch_id", epochId);
 
     if (updateErr) {
-      console.error("aggregate-commitments update questions_repo error:", updateErr);
-      return NextResponse.json(
-        { error: updateErr.message },
-        { status: 500 }
+      console.error(
+        "aggregate-commitments update questions_repo error:",
+        updateErr
       );
+      return NextResponse.json({ error: updateErr.message }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });

@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
     if (!body || typeof body !== "object" || !("payload" in body)) {
       return NextResponse.json(
         { error: "Request body must include payload" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -57,20 +57,34 @@ export async function POST(request: NextRequest) {
           error:
             "Invalid payload: requires question_id, epoch_id, nullifier, commitment, encrypted_answer, tmp_answer_bit",
         },
-        { status: 400 },
+        { status: 400 }
       );
+    }
+
+    const { data: questionRow } = await supabase
+      .from("questions_repo")
+      .select("arcium_poll_id")
+      .eq("id", payload.question_id)
+      .maybeSingle();
+
+    const arciumPollId = (questionRow as { arcium_poll_id?: number } | null)
+      ?.arcium_poll_id;
+
+    const insertRow: Record<string, unknown> = {
+      question_id: payload.question_id,
+      epoch_id: payload.epoch_id,
+      nullifier: payload.nullifier,
+      commitment: payload.commitment,
+      encrypted_answer: payload.encrypted_answer,
+      tmp_answer_bit: payload.tmp_answer_bit,
+    };
+    if (arciumPollId != null) {
+      insertRow.arcium_poll_id = arciumPollId;
     }
 
     const { data, error } = await supabase
       .from("response_commitments")
-      .insert({
-        question_id: payload.question_id,
-        epoch_id: payload.epoch_id,
-        nullifier: payload.nullifier,
-        commitment: payload.commitment,
-        encrypted_answer: payload.encrypted_answer,
-        tmp_answer_bit: payload.tmp_answer_bit,
-      })
+      .insert(insertRow)
       .select("id, submitted_at")
       .single();
 
@@ -78,19 +92,19 @@ export async function POST(request: NextRequest) {
       if (error.code === "23505") {
         return NextResponse.json(
           { error: "Already submitted for this question and epoch" },
-          { status: 409 },
+          { status: 409 }
         );
       }
       if (error.code === "23503") {
         return NextResponse.json(
           { error: "Invalid question_id" },
-          { status: 400 },
+          { status: 400 }
         );
       }
       console.error("save-answer-commitment insert error:", error);
       return NextResponse.json(
         { error: "Failed to save answer commitment" },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -112,7 +126,7 @@ export async function POST(request: NextRequest) {
     console.error("save-answer-commitment error:", err);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

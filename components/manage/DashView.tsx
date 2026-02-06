@@ -282,6 +282,14 @@ export function DashView({
 
         const first = rows[0] as Record<string, unknown>;
         const columns = Object.keys(first);
+        if (
+          sectionKey === "response_commitments" ||
+          sectionKey === "question_aggregates"
+        ) {
+          if (!columns.includes("arcium_poll_id")) {
+            columns.push("arcium_poll_id");
+          }
+        }
         const displayColumns =
           sectionKey === "questions_repo"
             ? ([...columns, "Actions"] as const)
@@ -513,45 +521,48 @@ export function DashView({
                       No matching rows.
                     </p>
                   ) : (
-                    <div className="h-[240px] overflow-auto rounded-md border">
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            {Object.keys(
-                              aggregateData.commitments[0] as Record<
-                                string,
-                                unknown
-                              >
-                            ).map((col) => (
-                              <TableHead
-                                key={col}
-                                className="whitespace-nowrap"
-                              >
-                                {col}
-                              </TableHead>
-                            ))}
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {aggregateData.commitments.map((row, idx) => {
-                            const rec = row as Record<string, unknown>;
-                            return (
-                              <TableRow key={idx}>
-                                {Object.keys(rec).map((col) => (
-                                  <TableCell
+                    (() => {
+                      const commitmentRows =
+                        aggregateData.commitments as Record<string, unknown>[];
+                      const firstRec = commitmentRows[0];
+                      const cols = Object.keys(firstRec);
+                      if (!cols.includes("arcium_poll_id")) {
+                        cols.push("arcium_poll_id");
+                      }
+                      return (
+                        <div className="h-[240px] overflow-auto rounded-md border">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                {cols.map((col) => (
+                                  <TableHead
                                     key={col}
-                                    className="max-w-[180px] truncate text-xs"
-                                    title={String(rec[col] ?? "—")}
+                                    className="whitespace-nowrap"
                                   >
-                                    {truncate(rec[col])}
-                                  </TableCell>
+                                    {col}
+                                  </TableHead>
                                 ))}
                               </TableRow>
-                            );
-                          })}
-                        </TableBody>
-                      </Table>
-                    </div>
+                            </TableHeader>
+                            <TableBody>
+                              {commitmentRows.map((row, idx) => (
+                                <TableRow key={idx}>
+                                  {cols.map((col) => (
+                                    <TableCell
+                                      key={col}
+                                      className="max-w-[180px] truncate text-xs"
+                                      title={String(row[col] ?? "—")}
+                                    >
+                                      {truncate(row[col])}
+                                    </TableCell>
+                                  ))}
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      );
+                    })()
                   )}
                 </>
               )}

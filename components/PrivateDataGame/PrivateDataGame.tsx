@@ -2,7 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { GameQuestion, GameQuestionAnswer } from "@/types/types";
-import { getGameHourSlot, getCurrentDateDDMMYY } from "@/lib/game-epoch";
+import {
+  getGameHourSlot,
+  getCurrentDateDDMMYY,
+  getEpochIdForDay,
+  getNextDayStartsAt,
+} from "@/lib/game-epoch";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { Textarea } from "../ui/textarea";
@@ -17,6 +22,11 @@ import { AnswerBit } from "@/lib/answer-commitments";
 import { getEpochId } from "@/lib/game-epoch";
 import { QuestionDisplay } from "./QuestionDisplay";
 import { toast } from "@/hooks/use-toast";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@radix-ui/react-popover";
 
 let BYPASS_GAME_DEV_MODE = true;
 
@@ -48,7 +58,12 @@ export function PrivateDataGame({
   const [isCommittingAnswer, setIsCommittingAnswer] = useState<boolean>(false);
   const [currentHour, setCurrentHour] = useState<number>(1);
   const [countdown, setCountdown] = useState<string>("");
+  const [dailyCountdown, setDailyCountdown] = useState<string>("");
   const [selectedHour, setSelectedHour] = useState<number | null>(null);
+  /** 'hourly' = opened from hour tile, 'daily' = opened from daily Arcium tile */
+  const [selectedSource, setSelectedSource] = useState<
+    "hourly" | "daily" | null
+  >(null);
   const [playedHours, setPlayedHours] = useState<number[]>(() => {
     const storedLog = localStorage.getItem("x-gameplay-played-hr-log") || "";
     return storedLog ? storedLog.split(",").map(Number) : [];
@@ -56,6 +71,12 @@ export function PrivateDataGame({
   const [lastPlayedDate, setLastPlayedDate] = useState<string>(
     () => localStorage.getItem("x-gameplay-played-last-ddmmyy") || ""
   );
+  const [dailyPlayed, setDailyPlayed] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    const stored = localStorage.getItem("x-gameplay-played-daily-ddmmyy") || "";
+    const today = getCurrentDateDDMMYY(new Date());
+    return stored === today;
+  });
   const [fetchingActiveQuestion, setFetchingActiveQuestion] =
     useState<boolean>(false);
   const [reasoning, setReasoning] = useState("");
@@ -73,13 +94,31 @@ export function PrivateDataGame({
       const seconds = Math.floor((diff % 60000) / 1000);
       setCountdown(`${minutes}m ${seconds}s`);
 
+      // Countdown to next UTC day (when the next daily question appears)
+      const nextDayStart = getNextDayStartsAt(now);
+      const dailyDiff = Math.max(0, nextDayStart.getTime() - now.getTime());
+      const dailyHours = Math.floor(dailyDiff / 3600000);
+      const dailyMins = Math.floor((dailyDiff % 3600000) / 60000);
+      const dailySecs = Math.floor((dailyDiff % 60000) / 1000);
+      setDailyCountdown(
+        dailyHours > 0
+          ? `${dailyHours}h ${dailyMins}m ${dailySecs}s`
+          : `${dailyMins}m ${dailySecs}s`
+      );
+
       const currentDate = getCurrentDateDDMMYY(now);
       if (currentDate !== lastPlayedDate) {
         localStorage.setItem("x-gameplay-played-last-ddmmyy", currentDate);
         localStorage.setItem("x-gameplay-played-hr-log", "");
         setLastPlayedDate(currentDate);
         setPlayedHours([]);
+        setRandomQuestion(null);
+        setSelectedSource(null);
+        setSelectedHour(null);
       }
+      const storedDaily =
+        localStorage.getItem("x-gameplay-played-daily-ddmmyy") || "";
+      setDailyPlayed(storedDaily === currentDate);
     };
 
     updateTime();
@@ -116,10 +155,10 @@ export function PrivateDataGame({
         return;
       }
 
-      return body.activeQuestion;
-
-      // const randomIndex = Math.floor(Math.random() * gameQuestionDataSet.length);
-      // return gameQuestionDataSet[randomIndex];
+      return {
+        hourlyActive: body.hourlyActive ?? null,
+        dailyActive: body.dailyActive ?? null,
+      };
     } catch (err) {
       console.error("Error fetching active question:", err);
       toast.error("Error", "Error fetching active question");
@@ -131,68 +170,81 @@ export function PrivateDataGame({
   const handleHourClick = async (hour: number) => {
     if (hour === currentHour) {
       setSelectedHour(hour);
-
-      const _activeQuestion = await getRandomQuestion();
-
-      setRandomQuestion(_activeQuestion);
+      setSelectedSource("hourly");
+      const data = await getRandomQuestion();
+      if (data?.hourlyActive) {
+        setRandomQuestion(data.hourlyActive);
+      }
       setSelectedAnswer(null);
     }
   };
 
+  const handleDailyClick = async () => {
+    setSelectedSource("daily");
+    setSelectedHour(null);
+    const data = await getRandomQuestion();
+    if (data?.dailyActive) {
+      setRandomQuestion(data.dailyActive);
+    } else {
+      setSelectedSource(null);
+      toast.error("Error", "No daily question available right now.");
+    }
+    setSelectedAnswer(null);
+  };
+
   const handleCommitAnswer = async () => {
+    debugger;
     if (!randomQuestion || !selectedAnswer) {
       toast.error("Error", "Unable to commit");
       return;
     }
 
-    // lets check if the user already commited this question.id recently (i.e. last 30 mins)
-    // ... this is a simple check based on the secure note session raw data
-    // ... it only protects in the event somethign on the UI fails and the user is able to commit
-    // ... and answer for the same quesion multiple times in a hour
-    // ideally we check local storage first, and THEN we check currentGameSecureNoteStorage
-    console.log(
-      "localstorage - ",
-      localStorage.getItem("x-gameplay-played-hr-log")
-    );
-    console.log(
-      "currentGameSecureNoteStorage - ",
-      currentGameSecureNoteStorage
-    );
-
-    const localStoragePlayedLog =
-      localStorage.getItem("x-gameplay-played-hr-log") || "";
-
-    if (
-      localStoragePlayedLog.split(",").indexOf(currentHour.toString()) !== -1
-    ) {
-      toast.error(
-        "Error",
-        "E1: You've already responded to this question during this game round/hour"
-      );
-      return;
+    const isDaily = selectedSource === "daily";
+    if (isDaily) {
+      if (dailyPlayed && !BYPASS_GAME_DEV_MODE) {
+        toast.error(
+          "Error",
+          "You've already responded to today's daily Arcium question."
+        );
+        return;
+      }
+    } else {
+      const localStoragePlayedLog =
+        localStorage.getItem("x-gameplay-played-hr-log") || "";
+      if (
+        localStoragePlayedLog.split(",").indexOf(currentHour.toString()) !==
+          -1 &&
+        !BYPASS_GAME_DEV_MODE
+      ) {
+        toast.error(
+          "Error",
+          "E1: You've already responded to this question during this game round/hour"
+        );
+        return;
+      }
     }
 
     // simple check, just get the first saved quesion Id  from currentGameSecureNoteStorage and check if questionId: X is '`questionId: ${question.id}'
     // ... it's not the best check, as all we are doing is seeing if the last saved quesion id is the same
     // ... it may cause problems IF for some reason the quesion has repeated 2 hours in a row (which should NOT happen)
-    // var subStringOfLastSavedQuestionId = currentGameSecureNoteStorage
-    //   .substr(
-    //     currentGameSecureNoteStorage.indexOf("questionId:"),
-    //     currentGameSecureNoteStorage.indexOf("question:")
-    //   )
-    //   .trim();
+    var subStringOfLastSavedQuestionId = currentGameSecureNoteStorage
+      .substr(
+        currentGameSecureNoteStorage.indexOf("questionId:"),
+        currentGameSecureNoteStorage.indexOf("question:")
+      )
+      .trim();
 
-    // if (subStringOfLastSavedQuestionId === `questionId: ${randomQuestion.id}`) {
-    //   alert(
-    //     "E2: You've already responded to this question during this game round/hour"
-    //   );
-    //   return;
-    // }
+    if (subStringOfLastSavedQuestionId === `questionId: ${randomQuestion.id}`) {
+      alert(
+        "E2: You've already responded to this question during this game round/hour"
+      );
+      return;
+    }
 
     setIsCommittingAnswer(true);
 
     const now = new Date();
-    const _isActiveHHDDMMYY = getEpochId(now); // HHDDMMYY, hour 1–24, month 1–12
+    const epochId = isDaily ? getEpochIdForDay(now) : getEpochId(now);
 
     if (
       typeof selectedAnswer.index !== "number" ||
@@ -210,19 +262,25 @@ export function PrivateDataGame({
 
     await onAnswerCommitment(
       randomQuestion!.id,
-      _isActiveHHDDMMYY,
+      epochId,
       selectedAnswer.index as AnswerBit
     );
 
     await onAnswerSelection(randomQuestion!, selectedAnswer!, reasoning);
 
-    // Update played hours
-    const newPlayed = [...playedHours, currentHour];
-    setPlayedHours(newPlayed);
-    localStorage.setItem("x-gameplay-played-hr-log", newPlayed.join(","));
+    if (isDaily) {
+      const today = getCurrentDateDDMMYY(now);
+      setDailyPlayed(true);
+      localStorage.setItem("x-gameplay-played-daily-ddmmyy", today);
+    } else {
+      const newPlayed = [...playedHours, currentHour];
+      setPlayedHours(newPlayed);
+      localStorage.setItem("x-gameplay-played-hr-log", newPlayed.join(","));
+    }
 
     setTimeout(() => {
       setIsCommittingAnswer(false);
+      setSelectedSource(null);
       setSelectedHour(null);
       setRandomQuestion(null);
     }, 2000);
@@ -230,83 +288,181 @@ export function PrivateDataGame({
 
   const hours = Array.from({ length: 24 }, (_, i) => i + 1);
 
+  const isDailyDisabled =
+    (dailyPlayed && !BYPASS_GAME_DEV_MODE) || fetchingActiveQuestion;
+  const modalOpen =
+    randomQuestion != null &&
+    ((selectedSource === "hourly" && selectedHour === currentHour) ||
+      selectedSource === "daily");
+
   return (
     <div className="w-full">
-      <div className="grid grid-cols-4 gap-4 mb-8">
-        {hours.map((hour) => {
-          const isPast = hour < currentHour;
-          const isActive = hour === currentHour;
-          const isNext =
-            hour === currentHour + 1 || (currentHour === 24 && hour === 1);
-          const isFuture = hour > currentHour;
-          const isPlayed = playedHours.includes(hour);
-          const isArciumActive = isActive && randomQuestion?.arciumPollId;
-
-          return (
-            <div
-              key={hour}
-              className={`p-2 border rounded text-center ${
-                isActive
-                  ? isArciumActive
-                    ? "bg-gradient-to-br from-green-200 to-violet-200 dark:from-green-900/50 dark:to-violet-900/50 border-violet-500 ring-2 ring-violet-300 dark:ring-violet-700 animate-pulse"
-                    : "bg-green-200 border-green-500 animate-pulse"
-                  : isPast
-                  ? "bg-gray-300 opacity-50"
-                  : "bg-gray-100"
-              } ${
-                isFuture ||
-                isPast ||
-                (isActive && isPlayed && !BYPASS_GAME_DEV_MODE)
-                  ? "cursor-not-allowed"
-                  : "cursor-pointer hover:bg-gray-200"
-              }
-              ${fetchingActiveQuestion ? "cursor-not-allowed" : ""}
-              `}
-              onClick={() =>
-                (!isPlayed || BYPASS_GAME_DEV_MODE) && handleHourClick(hour)
-              }
-            >
-              <div className="text-lg font-bold">{hour}</div>
-              {isPast && (
-                <div
-                  className={`text-[9px] md:text-xs ${
-                    isPlayed ? "text-green-800" : "text-red-500"
-                  }`}
+      {/* Daily Arcium Question Section */}
+      <div className="grid grid-cols-4 gap-4 mb-4">
+        <div
+          className={`col-span-4 p-2 border rounded text-center ${
+            dailyPlayed
+              ? "bg-green-200/80 dark:bg-green-900/40 border-green-600"
+              : "bg-green-200 border-green-500"
+          } ${
+            isDailyDisabled
+              ? "cursor-not-allowed"
+              : "cursor-pointer hover:bg-green-300/80"
+          }`}
+          onClick={() => !isDailyDisabled && handleDailyClick()}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (!isDailyDisabled && (e.key === "Enter" || e.key === " ")) {
+              e.preventDefault();
+              handleDailyClick();
+            }
+          }}
+        >
+          <div className="text-xs md:text-md">
+            <span className="font-bold">
+              ✨ Daily Arcium-Enabled Morality Question{" "}
+            </span>
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                  }}
+                  className="!text-md hover:underline decoration-dotted cursor-help md:mt-2"
                 >
-                  {isPlayed ? "Played!" : "Missed"}
-                </div>
-              )}
-              {isActive && (
-                <div className="text-[9px] md:text-xs text-black space-y-0.5">
-                  <div>{isPlayed ? "Live & Played!" : "Live Now!"}</div>
-                  {isArciumActive && (
-                    <div className="font-semibold text-violet-700 text-[9px]">
-                      Arcium Verifiable
-                    </div>
-                  )}
-                </div>
-              )}
-              {isNext && (
-                <div className="text-[9px] md:text-xs text-green-500">
-                  {countdown}
-                </div>
-              )}
-              {fetchingActiveQuestion && isActive && (
-                <div className="flex flex-row justify-center mt-2">
-                  <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 md:mr-2 animate-spin" />
-                </div>
-              )}
+                  <span className="!text-[9px] mb-2 md:mb-0">👁️ What?</span>
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="max-w-sm text-xs text-gray-700 z-50 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-md p-2">
+                Every day, a special morality question is unlocked. The results
+                of this question are aggregated privately and verifiably using
+                the{" "}
+                <a
+                  href="https://www.arcium.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-500 hover:text-blue-600"
+                >
+                  Arcium Network
+                </a>{" "}
+                . <br />
+                <br />
+                No user identity is ever-recorded and yet the integrity of the
+                final result is verifiable on the blockchain! This allows us to
+                build monetization strategies like private prediction markets
+                that let the world bet on collective human morality signals
+                whilst compensating you for your time in the game.
+                <br />
+                <br />
+                Note that unlike the hourly question, to play this Daily
+                Arcium-Enabled Morality Question you will need your Solana
+                wallet connected (see app menu bar for this option) and sign a
+                transacion that send your encrypted answer to the Arcium
+                network.
+              </PopoverContent>
+            </Popover>
+          </div>
+          <div className="text-[9px] md:text-xs text-black">
+            {dailyPlayed ? "Live & Played!" : "Live Now!"}
+          </div>
+          <div className="text-[9px] md:text-xs text-green-700 dark:text-green-400 mt-0.5">
+            Next question: {dailyCountdown}
+          </div>
+          {fetchingActiveQuestion && selectedSource === "daily" && (
+            <div className="flex flex-row justify-center mt-2">
+              <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin" />
             </div>
-          );
-        })}
+          )}
+        </div>
       </div>
 
+      {/* Hourly Questions Section */}
+      <>
+        <div className="text-sm font-bold mb-4 text-left">
+          Hourly Morality Questions
+        </div>
+        <div className="grid grid-cols-4 gap-4 mb-8">
+          {hours.map((hour) => {
+            const isPast = hour < currentHour;
+            const isActive = hour === currentHour;
+            const isNext =
+              hour === currentHour + 1 || (currentHour === 24 && hour === 1);
+            const isFuture = hour > currentHour;
+            const isPlayed = playedHours.includes(hour);
+            const isArciumActive =
+              isActive &&
+              selectedSource === "hourly" &&
+              randomQuestion?.arciumPollId != null;
+
+            return (
+              <div
+                key={hour}
+                className={`p-2 border rounded text-center ${
+                  isActive
+                    ? isArciumActive
+                      ? "bg-gradient-to-br from-green-200 to-violet-200 dark:from-green-900/50 dark:to-violet-900/50 border-violet-500 ring-2 ring-violet-300 dark:ring-violet-700 animate-pulse"
+                      : "bg-green-200 border-green-500 animate-pulse"
+                    : isPast
+                    ? "bg-gray-300 opacity-50"
+                    : "bg-gray-100"
+                } ${
+                  isFuture ||
+                  isPast ||
+                  (isActive && isPlayed && !BYPASS_GAME_DEV_MODE)
+                    ? "cursor-not-allowed"
+                    : "cursor-pointer hover:bg-gray-200"
+                }
+              ${fetchingActiveQuestion ? "cursor-not-allowed" : ""}
+              `}
+                onClick={() =>
+                  (!isPlayed || BYPASS_GAME_DEV_MODE) && handleHourClick(hour)
+                }
+              >
+                <div className="text-lg font-bold">{hour}</div>
+                {isPast && (
+                  <div
+                    className={`text-[9px] md:text-xs ${
+                      isPlayed ? "text-green-800" : "text-red-500"
+                    }`}
+                  >
+                    {isPlayed ? "Played!" : "Missed"}
+                  </div>
+                )}
+                {isActive && (
+                  <div className="text-[9px] md:text-xs text-black space-y-0.5">
+                    <div>{isPlayed ? "Live & Played!" : "Live Now!"}</div>
+                    {isArciumActive && (
+                      <div className="font-semibold text-violet-700 text-[9px]">
+                        ✨ Arcium Verifiable
+                      </div>
+                    )}
+                  </div>
+                )}
+                {isNext && (
+                  <div className="text-[9px] md:text-xs text-green-500">
+                    {countdown}
+                  </div>
+                )}
+                {fetchingActiveQuestion && isActive && (
+                  <div className="flex flex-row justify-center mt-2">
+                    <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 md:mr-2 animate-spin" />
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </>
+
       <Dialog
-        open={selectedHour === currentHour && randomQuestion != null}
+        open={modalOpen}
         onOpenChange={(open) => {
           if (!open && !isCommittingAnswer) {
             setRandomQuestion(null);
             setSelectedHour(null);
+            setSelectedSource(null);
           }
         }}
       >
@@ -320,7 +476,7 @@ export function PrivateDataGame({
                     {randomQuestion?.arciumPollId && (
                       <Badge
                         variant="secondary"
-                        className="bg-gradient-to-br from-green-200 to-violet-200 dark:from-green-900/50 dark:to-violet-900/50 border-violet-500 ring-2 ring-violet-300 dark:ring-violet-700 font-semibold text-[10px] px-2 py-1"
+                        className="bg-gradient-to-br from-green-500 to-violet-200 dark:from-green-900/50 dark:to-violet-900/50 border-violet-500 ring-2 ring-violet-300 dark:ring-violet-700 font-semibold text-[10px] px-2 py-1"
                       >
                         ✨ Arcium Verifiable
                       </Badge>
@@ -362,6 +518,13 @@ export function PrivateDataGame({
                     className="h-10 sm:h-11 text-xs"
                   />
                 </div>
+
+                <div className="text-[8px] text-gray-500">
+                  debug: q_id: {randomQuestion?.id}, a_ids:{" "}
+                  {randomQuestion?.answers.map((a) => a.id).join(", ")},
+                  arciumPollId: {randomQuestion?.arciumPollId ?? "na"}
+                </div>
+
                 <Button
                   onClick={() => selectedAnswer && handleCommitAnswer()}
                   disabled={!selectedAnswer}
