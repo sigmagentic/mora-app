@@ -80,6 +80,7 @@ export function PrivateDataGame({
   const [fetchingActiveQuestion, setFetchingActiveQuestion] =
     useState<boolean>(false);
   const [reasoning, setReasoning] = useState("");
+  const [dailyActiveOffline, setDailyActiveOffline] = useState<boolean>(false);
 
   useEffect(() => {
     const updateTime = () => {
@@ -155,9 +156,12 @@ export function PrivateDataGame({
         return;
       }
 
+      const dailyActive = body.dailyActive ?? null;
+      setDailyActiveOffline(dailyActive === null);
+
       return {
         hourlyActive: body.hourlyActive ?? null,
-        dailyActive: body.dailyActive ?? null,
+        dailyActive,
       };
     } catch (err) {
       console.error("Error fetching active question:", err);
@@ -171,10 +175,18 @@ export function PrivateDataGame({
     if (hour === currentHour) {
       setSelectedHour(hour);
       setSelectedSource("hourly");
+
       const data = await getRandomQuestion();
+
       if (data?.hourlyActive) {
         setRandomQuestion(data.hourlyActive);
       }
+
+      // Update offline state for daily if needed
+      if (data?.dailyActive === null) {
+        setDailyActiveOffline(true);
+      }
+
       setSelectedAnswer(null);
     }
   };
@@ -182,18 +194,27 @@ export function PrivateDataGame({
   const handleDailyClick = async () => {
     setSelectedSource("daily");
     setSelectedHour(null);
+
     const data = await getRandomQuestion();
+
     if (data?.dailyActive) {
       setRandomQuestion(data.dailyActive);
+      setDailyActiveOffline(false);
     } else {
       setSelectedSource(null);
-      toast.error("Error", "No daily question available right now.");
+
+      toast.error(
+        "Error",
+        "Daily Arcium-Enabled Morality Question is currently offline."
+      );
+
+      setDailyActiveOffline(true);
     }
+
     setSelectedAnswer(null);
   };
 
   const handleCommitAnswer = async () => {
-    debugger;
     if (!randomQuestion || !selectedAnswer) {
       toast.error("Error", "Unable to commit");
       return;
@@ -301,19 +322,27 @@ export function PrivateDataGame({
       <div className="grid grid-cols-4 gap-4 mb-4">
         <div
           className={`col-span-4 p-2 border rounded text-center ${
-            dailyPlayed
+            dailyActiveOffline
+              ? "bg-gray-200 dark:bg-gray-800 border-gray-400"
+              : dailyPlayed
               ? "bg-green-200/80 dark:bg-green-900/40 border-green-600"
               : "bg-green-200 border-green-500"
           } ${
-            isDailyDisabled
+            isDailyDisabled || dailyActiveOffline
               ? "cursor-not-allowed"
               : "cursor-pointer hover:bg-green-300/80"
           }`}
-          onClick={() => !isDailyDisabled && handleDailyClick()}
+          onClick={() =>
+            !isDailyDisabled && !dailyActiveOffline && handleDailyClick()
+          }
           role="button"
           tabIndex={0}
           onKeyDown={(e) => {
-            if (!isDailyDisabled && (e.key === "Enter" || e.key === " ")) {
+            if (
+              !isDailyDisabled &&
+              !dailyActiveOffline &&
+              (e.key === "Enter" || e.key === " ")
+            ) {
               e.preventDefault();
               handleDailyClick();
             }
@@ -364,12 +393,20 @@ export function PrivateDataGame({
               </PopoverContent>
             </Popover>
           </div>
-          <div className="text-[9px] md:text-xs text-black">
-            {dailyPlayed ? "Live & Played!" : "Live Now!"}
-          </div>
-          <div className="text-[9px] md:text-xs text-green-700 dark:text-green-400 mt-0.5">
-            Next question: {dailyCountdown}
-          </div>
+          {dailyActiveOffline ? (
+            <div className="text-[9px] md:text-xs text-red-600 dark:text-red-400 font-semibold">
+              Daily Arcium-Enabled Morality Question is currently offline.
+            </div>
+          ) : (
+            <>
+              <div className="text-[9px] md:text-xs text-black">
+                {dailyPlayed ? "Live & Played!" : "Live Now!"}
+              </div>
+              <div className="text-[9px] md:text-xs text-green-700 dark:text-green-400 mt-0.5">
+                Next question in: {dailyCountdown}
+              </div>
+            </>
+          )}
           {fetchingActiveQuestion && selectedSource === "daily" && (
             <div className="flex flex-row justify-center mt-2">
               <Loader2 className="w-3 h-3 sm:w-4 sm:h-4 animate-spin" />

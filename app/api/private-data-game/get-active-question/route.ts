@@ -406,6 +406,12 @@ export async function GET(request: NextRequest) {
         .limit(1)
         .maybeSingle();
 
+      const nextDailyArciumPollId = await getNextArciumPollId();
+      console.log(
+        "ARCIUM: 1 nextDailyArciumPollId >>>>",
+        nextDailyArciumPollId
+      );
+
       if (existingDailyRow) {
         dailyQuestionData = existingDailyRow as DailyRow;
       } else if (activeQuestionData) {
@@ -436,31 +442,44 @@ export async function GET(request: NextRequest) {
         );
 
         if ("success" in result && result.success && result.questionId) {
-          const nextDailyArciumPollId = Math.floor(Math.random() * 9000) + 1000;
+          const nextDailyArciumPollId = await getNextArciumPollId();
 
-          const opensAtDay = getOpensAtDay(now);
-          const closesAtDay = getClosesAtDay(now);
+          console.log(
+            "ARCIUM:nextDailyArciumPollId >>>>",
+            nextDailyArciumPollId
+          );
 
-          const { error: updateDailyErr } = await supabase
-            .from("questions_repo")
-            .update({
-              game_status: "ACTIVE_ARCIUM",
-              epoch_id: _dayEpoch,
-              opens_at: toTimestampStr(opensAtDay),
-              closes_at: toTimestampStr(closesAtDay),
-              arcium_poll_id: nextDailyArciumPollId,
-            })
-            .eq("id", result.questionId);
+          if (nextDailyArciumPollId === null) {
+            console.error(
+              "Failed to get next Arcium poll ID, skipping daily question creation"
+            );
+            // Continue without creating daily question - hourlyActive will still be returned
+            dailyQuestionData = null;
+          } else {
+            const opensAtDay = getOpensAtDay(now);
+            const closesAtDay = getClosesAtDay(now);
 
-          if (!updateDailyErr) {
-            const { data: newDailyRow } = await supabase
+            const { error: updateDailyErr } = await supabase
               .from("questions_repo")
-              .select("*")
-              .eq("id", result.questionId)
-              .single();
+              .update({
+                game_status: "ACTIVE_ARCIUM",
+                epoch_id: _dayEpoch,
+                opens_at: toTimestampStr(opensAtDay),
+                closes_at: toTimestampStr(closesAtDay),
+                arcium_poll_id: nextDailyArciumPollId,
+              })
+              .eq("id", result.questionId);
 
-            if (newDailyRow) {
-              dailyQuestionData = newDailyRow as DailyRow;
+            if (!updateDailyErr) {
+              const { data: newDailyRow } = await supabase
+                .from("questions_repo")
+                .select("*")
+                .eq("id", result.questionId)
+                .single();
+
+              if (newDailyRow) {
+                dailyQuestionData = newDailyRow as DailyRow;
+              }
             }
           }
         }
@@ -531,28 +550,25 @@ export async function GET(request: NextRequest) {
 
         if (!nextDailyArciumPollId) {
           console.error(
-            "Error fetching daily Arcium poll ID:",
+            "Daily question missing arcium_poll_id:",
             dailyQuestionData
           );
-
-          return NextResponse.json(
-            { error: "Error fetching daily Arcium poll ID" },
-            { status: 500 }
-          );
+          // Set dailyActive to null instead of erroring - hourlyActive will still be returned
+          dailyActive = null;
+        } else {
+          dailyActive = {
+            id: dailyQuestionData.id,
+            title: dailyQuestionData.title ?? undefined,
+            img: dailyQuestionData.img ?? undefined,
+            text: dailyQuestionData.text ?? "",
+            opens_at: dailyQuestionData.opens_at ?? "",
+            closes_at: dailyQuestionData.closes_at ?? "",
+            game_status: dailyQuestionData.game_status ?? "",
+            epoch_id: dailyQuestionData.epoch_id ?? "",
+            answers: dailyAnswers,
+            arciumPollId: nextDailyArciumPollId,
+          };
         }
-
-        dailyActive = {
-          id: dailyQuestionData.id,
-          title: dailyQuestionData.title ?? undefined,
-          img: dailyQuestionData.img ?? undefined,
-          text: dailyQuestionData.text ?? "",
-          opens_at: dailyQuestionData.opens_at ?? "",
-          closes_at: dailyQuestionData.closes_at ?? "",
-          game_status: dailyQuestionData.game_status ?? "",
-          epoch_id: dailyQuestionData.epoch_id ?? "",
-          answers: dailyAnswers,
-          arciumPollId: nextDailyArciumPollId,
-        };
       }
     }
 
@@ -563,5 +579,44 @@ export async function GET(request: NextRequest) {
       { error: "Internal server error" },
       { status: 500 }
     );
+  }
+}
+
+/**
+ * Gets the next Arcium poll ID by finding the highest existing arcium_poll_id
+ * in questions_repo and adding 1. Returns null on error.
+ */
+async function getNextArciumPollId(): Promise<number | null> {
+  try {
+    const { data, error } = await supabase
+      .from("questions_repo")
+      .select("arcium_poll_id")
+      .not("arcium_poll_id", "is", null)
+      .order("arcium_poll_id", { ascending: false })
+      .limit(1);
+
+    if (error) {
+      console.error("Error fetching max arcium_poll_id:", error);
+      return null;
+    }
+
+    if (!data || data.length === 0) {
+      // No existing arcium_poll_id found, start at 1
+      return 1;
+    }
+
+    const maxId = data[0]?.arcium_poll_id as number | undefined;
+
+    if (typeof maxId !== "number") {
+      console.error("Invalid max arcium_poll_id:", maxId);
+      return null;
+    }
+
+    console.log("ARCIUM: current max arcium_poll_id >>>>", maxId);
+
+    return maxId + 1;
+  } catch (err) {
+    console.error("Error in getNextArciumPollId:", err);
+    return null;
   }
 }
