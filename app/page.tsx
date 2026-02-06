@@ -10,7 +10,7 @@ import Image from "next/image";
 import { PastResults } from "@/components/PrivateDataGame/PastResults";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Play } from "lucide-react";
+import { Play, Twitter } from "lucide-react";
 
 export default function Home() {
   const [user, setUser] = useState<AppUser | null>(null);
@@ -181,10 +181,19 @@ export default function Home() {
         </div>
       </div>
       <footer className="w-full py-2 px-4">
-        <div className="container mx-auto text-center">
+        <div className="container mx-auto text-center flex flex-row items-center justify-center">
           {appVersion && (
             <p className="text-[10px] text-gray-400">v{appVersion}</p>
           )}
+
+          <a
+            href="https://x.com/mora_am_i"
+            target="_blank"
+            title="Follow us on X"
+            rel="noopener noreferrer"
+          >
+            <Twitter className="w-4 h-4 text-gray-400 ml-2" />
+          </a>
         </div>
       </footer>
     </main>
