@@ -164,7 +164,7 @@ export default function Home() {
                   <QuestionPreview />
                 </div>
               </div>
-              <div className="bgx-green-500 mt-4">
+              <div className="bgx-green-500 mt-10">
                 <Card className="border-0 shadow-2xl bg-white/95 backdrop-blur-sm">
                   <CardHeader>
                     <CardTitle className="text-center text-xl font-bold text-gray-900">
