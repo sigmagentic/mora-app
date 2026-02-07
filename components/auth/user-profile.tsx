@@ -1119,7 +1119,10 @@ export function UserProfile({
     // create a encrypted_answer (in the final version most likely an archium key will be used to encrypt it)
     const answerBitBuffer = new TextEncoder().encode(answerBit.toString());
     const { ciphertext: encryptedAnswer, iv: encryptedAnswerIv } =
-      await encryptAnswerForSecureStorage(answerBitBuffer.buffer, CACHED_VMK);
+      await encryptAnswerForSecureStorage(
+        answerBitBuffer.buffer as ArrayBuffer,
+        CACHED_VMK
+      );
 
     // note that the encryptedAnswer decoding etc is probabaly all wrong right now (just a placeholder)
     const payloadToSave = {

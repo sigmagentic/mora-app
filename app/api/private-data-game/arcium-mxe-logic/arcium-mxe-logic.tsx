@@ -2,7 +2,7 @@ import { supabase } from "@/lib/supabase";
 import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import { PublicKey } from "@solana/web3.js";
-import { Voting } from "./program-idl/voting";
+import { VotingIDL } from "./program-idl/voting";
 import {
   awaitComputationFinalization,
   getCompDefAccOffset,
@@ -19,6 +19,12 @@ import {
 // const ENCRYPTION_KEY_MESSAGE = process.env.ARCIUM_ENCRYPTION_KEY_MESSAGE;
 const CLUSTER_OFFSET = 456; // Devnet cluster offset
 
+/** Error message returned when finalization wait exceeds ARCIUM_FINALIZATION_TIMEOUT_MS. Caller can revert to non-Arcium daily poll. */
+export const ARCIUM_FINALIZATION_TIMEOUT_MSG =
+  "Arcium poll creation timed out, reverting to a non-Arcium poll";
+
+const ARCIUM_FINALIZATION_TIMEOUT_MS = 120_000;
+
 /**
  * Generates random bytes using Web Crypto API.
  * Works in both Node.js and edge runtimes.
@@ -31,7 +37,7 @@ function randomBytes(length: number): Uint8Array {
 let arciumInitialized = false;
 let owner: anchor.web3.Keypair | null = null;
 let provider: anchor.AnchorProvider | null = null;
-let program: Program<Voting> | null = null;
+let program: Program<anchor.Idl> | null = null;
 let clusterAccount: PublicKey | null = null;
 let mxePublicKey: Uint8Array | null = null;
 
@@ -89,23 +95,20 @@ async function initArciumInterface(): Promise<void> {
     // Set provider before accessing program
     anchor.setProvider(provider);
 
-    // Get program ID from IDL (address from Voting type)
-    const programId: PublicKey = new PublicKey(
-      "HeSUfuXCo81dU5WH7JFzwLVgN8pLUtLtB1RdLyAKFVAD"
-    );
-    // Create Program instance - Voting is a type, so we use an empty object cast to Idl
-    // The actual IDL structure is provided by Anchor at runtime via the program ID
-    // Program constructor: Program(idl: Idl, programId: PublicKey, provider?: Provider)
-    const idlObj = {} as anchor.Idl;
-    // @ts-ignore - TypeScript incorrectly infers Program overload (thinks 2nd param is Provider)
-    // Runtime signature is correct: Program(idl: Idl, programId: PublicKey, provider?: Provider)
-    program = new Program(idlObj, programId, provider) as Program<Voting>;
+    // Create Program with real IDL; program ID is read from IDL.address by Anchor.
+    // Cast IDL via unknown: VotingIDL is readonly, Anchor's Idl expects mutable; runtime is correct.
+    program = new Program(VotingIDL as unknown as anchor.Idl, provider);
 
     // Setup cluster account
     clusterAccount = getClusterAccAddress(CLUSTER_OFFSET);
 
     // Get MXE public key with retry
-    mxePublicKey = await getMXEPublicKeyWithRetry(provider, programId, 20, 500);
+    mxePublicKey = await getMXEPublicKeyWithRetry(
+      provider,
+      program.programId,
+      20,
+      500
+    );
 
     if (!clusterAccount || !mxePublicKey) {
       throw new Error("ERR-ARCIUM-006: Failed to initialize cluster or MXE");
@@ -113,7 +116,7 @@ async function initArciumInterface(): Promise<void> {
 
     arciumInitialized = true;
     console.log("ARCIUM: Interface initialized successfully");
-    console.log("ARCIUM: Program ID:", programId.toBase58());
+    console.log("ARCIUM: Program ID:", program.programId.toBase58());
     console.log("ARCIUM: Cluster account:", clusterAccount.toBase58());
     console.log("ARCIUM: MXE x25519 pubkey:", mxePublicKey);
   } catch (err) {
@@ -298,13 +301,42 @@ export async function createNewOnChainArciumPoll(
 
     console.log(`ARCIUM: Poll ${newPollId} created with signature:`, pollSig);
 
-    // Wait for computation finalization
-    const finalizedPolSig = await awaitComputationFinalization(
-      provider,
-      pollComputationOffset,
-      program.programId,
-      "confirmed"
-    );
+    // Wait for computation finalization (max 120s); on timeout return specific error so caller can revert to non-Arcium daily
+    let finalizedPolSig: string;
+    try {
+      finalizedPolSig = await Promise.race([
+        awaitComputationFinalization(
+          provider,
+          pollComputationOffset,
+          program.programId,
+          "confirmed"
+        ),
+        new Promise<string>((_, reject) =>
+          setTimeout(
+            () => reject(new Error(ARCIUM_FINALIZATION_TIMEOUT_MSG)),
+            ARCIUM_FINALIZATION_TIMEOUT_MS
+          )
+        ),
+      ]);
+    } catch (finalizationErr) {
+      if (
+        finalizationErr instanceof Error &&
+        finalizationErr.message === ARCIUM_FINALIZATION_TIMEOUT_MSG
+      ) {
+        console.warn(
+          `ARCIUM: Finalization timed out after ${
+            ARCIUM_FINALIZATION_TIMEOUT_MS / 1000
+          }s for poll ${newPollId}, returning so caller can revert to non-Arcium daily`
+        );
+        return {
+          polSig: pollSig,
+          finalizedPolSig: "",
+          error: true,
+          errorMessage: ARCIUM_FINALIZATION_TIMEOUT_MSG,
+        };
+      }
+      throw finalizationErr;
+    }
 
     console.log(
       `ARCIUM: Finalized poll ${newPollId} signature:`,

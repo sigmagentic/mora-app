@@ -159,6 +159,13 @@ export function PrivateDataGame({
       const dailyActive = body.dailyActive ?? null;
       setDailyActiveOffline(dailyActive === null);
 
+      const notices: string[] = Array.isArray(body.specificNotices)
+        ? body.specificNotices
+        : [];
+      notices
+        .filter((s) => typeof s === "string" && s.trim().length > 0)
+        .forEach((text) => toast.message("Notice", text));
+
       return {
         hourlyActive: body.hourlyActive ?? null,
         dailyActive,
@@ -431,7 +438,11 @@ export function PrivateDataGame({
             const isArciumActive =
               isActive &&
               selectedSource === "hourly" &&
-              randomQuestion?.arciumPollId != null;
+              randomQuestion?.arciumPollId != null &&
+              randomQuestion?.arciumPolSig != null &&
+              randomQuestion?.arciumPolSig.trim() !== "" &&
+              randomQuestion?.arciumFinalizedPolSig != null &&
+              randomQuestion?.arciumFinalizedPolSig.trim() !== "";
 
             return (
               <div
@@ -512,21 +523,29 @@ export function PrivateDataGame({
                 <div className="flex flex-col gap-2">
                   <DialogTitle className="flex items-center gap-2 flex-wrap">
                     Question
-                    {randomQuestion?.arciumPollId && (
-                      <Badge
-                        variant="secondary"
-                        className="bg-gradient-to-br from-green-500 to-violet-200 dark:from-green-900/50 dark:to-violet-900/50 border-violet-500 ring-2 ring-violet-300 dark:ring-violet-700 font-semibold text-[10px] px-2 py-1"
-                      >
-                        ✨ Arcium Verifiable
-                      </Badge>
-                    )}
+                    {randomQuestion?.arciumPollId &&
+                      randomQuestion?.arciumPolSig &&
+                      randomQuestion?.arciumPolSig.trim() !== "" &&
+                      randomQuestion?.arciumFinalizedPolSig &&
+                      randomQuestion?.arciumFinalizedPolSig.trim() !== "" && (
+                        <Badge
+                          variant="secondary"
+                          className="bg-gradient-to-br from-green-500 to-violet-200 dark:from-green-900/50 dark:to-violet-900/50 border-violet-500 ring-2 ring-violet-300 dark:ring-violet-700 font-semibold text-[10px] px-2 py-1"
+                        >
+                          ✨ Arcium Verifiable
+                        </Badge>
+                      )}
                   </DialogTitle>
-                  {randomQuestion?.arciumPollId && (
-                    <p className="text-[10px] text-green-600 dark:text-green-400">
-                      This question&apos;s results will be verifiable on the
-                      Arcium network and soon be part of prediction markets.
-                    </p>
-                  )}
+                  {randomQuestion?.arciumPollId &&
+                    randomQuestion?.arciumPolSig &&
+                    randomQuestion?.arciumPolSig.trim() !== "" &&
+                    randomQuestion?.arciumFinalizedPolSig &&
+                    randomQuestion?.arciumFinalizedPolSig.trim() !== "" && (
+                      <p className="text-[10px] text-green-600 dark:text-green-400">
+                        This question&apos;s results will be verifiable on the
+                        Arcium network and soon be part of prediction markets.
+                      </p>
+                    )}
                 </div>
               </DialogHeader>
               <div
@@ -558,10 +577,20 @@ export function PrivateDataGame({
                   />
                 </div>
 
-                <div className="text-[8px] text-gray-500">
+                <div className="text-[8px] text-gray-500 whitespace-pre-wrap overflow-x-auto">
                   debug: q_id: {randomQuestion?.id}, a_ids:{" "}
                   {randomQuestion?.answers.map((a) => a.id).join(", ")},
-                  arciumPollId: {randomQuestion?.arciumPollId ?? "na"}
+                  a_PollId: {randomQuestion?.arciumPollId ?? "na"}, a_PolSig:{" "}
+                  {randomQuestion?.arciumPolSig &&
+                  randomQuestion?.arciumPolSig.trim() !== ""
+                    ? randomQuestion?.arciumPolSig
+                    : "na"}
+                  , a_FinalizedPolSig:{" "}
+                  {randomQuestion?.arciumFinalizedPolSig &&
+                  randomQuestion?.arciumFinalizedPolSig.trim() !== ""
+                    ? randomQuestion?.arciumFinalizedPolSig
+                    : "na"}
+                  ,
                 </div>
 
                 <Button

@@ -15,6 +15,7 @@ import { addNewQuestionAnswerSet } from "@/app/manage/dash/actions";
 import {
   createNewOnChainArciumPoll,
   getNextArciumPollId,
+  ARCIUM_FINALIZATION_TIMEOUT_MSG,
 } from "@/app/api/private-data-game/arcium-mxe-logic/arcium-mxe-logic";
 
 // Using Node.js runtime instead of edge because:
@@ -30,6 +31,14 @@ export async function GET(request: NextRequest) {
   try {
     const url = new URL(request.url);
     const giveSampleQuestion = url.searchParams.get("give_sample_question");
+    // const debugThis = true;
+
+    // if (debugThis) {
+    //   return NextResponse.json(
+    //     { error: "This is a sample response" },
+    //     { status: 200 }
+    //   );
+    // }
 
     type DailyRow = {
       id: number;
@@ -41,10 +50,13 @@ export async function GET(request: NextRequest) {
       game_status: string;
       epoch_id: string | null;
       arcium_poll_id?: number;
+      arcium_pol_sig?: string;
+      arcium_finalized_pol_sig?: string;
     };
     let bypassAllLoggedInLogic = false;
     let activeQuestionData: GameQuestion | null = null;
     let dailyQuestionData: DailyRow | null = null;
+    const specificNotices: string[] = [];
 
     // We need a sample, finalized quesion as a demo for the homepage
     if (giveSampleQuestion && giveSampleQuestion === "1") {
@@ -463,33 +475,64 @@ export async function GET(request: NextRequest) {
             // Create on-chain Arcium poll
             const pollQuestionText = activeQuestionData.text || "";
 
-            // bypass for now...
-            const polSig = "1234567890";
-            const finalizedPolSig = "1234567890";
-            const error = false;
-            const errorMessage = "";
+            // // bypass for now...
+            // const polSig = "1234567890";
+            // const finalizedPolSig = "1234567890";
+            // const error = false;
+            // const errorMessage = "";
 
-            // const { polSig, finalizedPolSig, error, errorMessage } =
-            //   await createNewOnChainArciumPoll(
-            //     nextDailyArciumPollId,
-            //     pollQuestionText,
-            //     result.questionId
-            //   );
+            const { polSig, finalizedPolSig, error, errorMessage } =
+              await createNewOnChainArciumPoll(
+                nextDailyArciumPollId,
+                pollQuestionText,
+                result.questionId
+              );
 
             if (error) {
-              console.error(
-                "Error creating new on chain arcium poll:",
-                errorMessage
-              );
-              dailyQuestionData = null; // let's not update the database with the new question as ACTIVE_ARCIUM as it will be deleted from the database
+              // Timeout/finalization failed: poll ID was still consumed on-chain if pollSig succeeded,
+              // so persist arcium_poll_id and pollSig so next run uses next ID; leave finalized sig null.
+              if (errorMessage === ARCIUM_FINALIZATION_TIMEOUT_MSG) {
+                specificNotices.push(errorMessage);
+                const opensAtDay = getOpensAtDay(now);
+                const closesAtDay = getClosesAtDay(now);
+                const { error: updateDailyErr } = await supabase
+                  .from("questions_repo")
+                  .update({
+                    game_status: "ACTIVE_ARCIUM",
+                    epoch_id: _dayEpoch,
+                    opens_at: toTimestampStr(opensAtDay),
+                    closes_at: toTimestampStr(closesAtDay),
+                    arcium_poll_id: nextDailyArciumPollId,
+                    arcium_pol_sig:
+                      polSig && String(polSig).trim() !== "" ? polSig : null,
+                    arcium_finalized_pol_sig: null,
+                  })
+                  .eq("id", result.questionId);
 
-              return NextResponse.json(
-                { error: errorMessage },
-                { status: 500 }
-              );
-            }
+                if (!updateDailyErr) {
+                  const { data: newDailyRow } = await supabase
+                    .from("questions_repo")
+                    .select("*")
+                    .eq("id", result.questionId)
+                    .single();
 
-            if (!dailyQuestionData) {
+                  if (newDailyRow) {
+                    dailyQuestionData = newDailyRow as DailyRow;
+                  }
+                }
+              } else {
+                console.error(
+                  "Error creating new on chain arcium poll:",
+                  errorMessage
+                );
+                dailyQuestionData = null;
+
+                return NextResponse.json(
+                  { error: errorMessage },
+                  { status: 500 }
+                );
+              }
+            } else if (!dailyQuestionData) {
               const opensAtDay = getOpensAtDay(now);
               const closesAtDay = getClosesAtDay(now);
 
@@ -583,33 +626,37 @@ export async function GET(request: NextRequest) {
           (ans: GameQuestionAnswer) => ({ id: ans.id, text: ans.text })
         );
 
-        const nextDailyArciumPollId = dailyQuestionData.arcium_poll_id;
-
-        if (!nextDailyArciumPollId) {
-          console.error(
-            "Daily question missing arcium_poll_id:",
-            dailyQuestionData
-          );
-          // Set dailyActive to null instead of erroring - hourlyActive will still be returned
-          dailyActive = null;
-        } else {
-          dailyActive = {
-            id: dailyQuestionData.id,
-            title: dailyQuestionData.title ?? undefined,
-            img: dailyQuestionData.img ?? undefined,
-            text: dailyQuestionData.text ?? "",
-            opens_at: dailyQuestionData.opens_at ?? "",
-            closes_at: dailyQuestionData.closes_at ?? "",
-            game_status: dailyQuestionData.game_status ?? "",
-            epoch_id: dailyQuestionData.epoch_id ?? "",
-            answers: dailyAnswers,
-            arciumPollId: nextDailyArciumPollId,
-          };
-        }
+        // Daily can be shown with or without arcium_poll_id (e.g. reverted to non-Arcium on timeout)
+        dailyActive = {
+          id: dailyQuestionData.id,
+          title: dailyQuestionData.title ?? undefined,
+          img: dailyQuestionData.img ?? undefined,
+          text: dailyQuestionData.text ?? "",
+          opens_at: dailyQuestionData.opens_at ?? "",
+          closes_at: dailyQuestionData.closes_at ?? "",
+          game_status: dailyQuestionData.game_status ?? "",
+          epoch_id: dailyQuestionData.epoch_id ?? "",
+          answers: dailyAnswers,
+          ...(dailyQuestionData.arcium_poll_id != null && {
+            arciumPollId: dailyQuestionData.arcium_poll_id,
+          }),
+          ...(dailyQuestionData.arcium_pol_sig != null &&
+            dailyQuestionData.arcium_pol_sig.trim() !== "" && {
+              arciumPolSig: dailyQuestionData.arcium_pol_sig,
+            }),
+          ...(dailyQuestionData.arcium_finalized_pol_sig != null &&
+            dailyQuestionData.arcium_finalized_pol_sig.trim() !== "" && {
+              arciumFinalizedPolSig: dailyQuestionData.arcium_finalized_pol_sig,
+            }),
+        };
       }
     }
 
-    return NextResponse.json({ hourlyActive, dailyActive });
+    return NextResponse.json({
+      hourlyActive,
+      dailyActive,
+      specificNotices,
+    });
   } catch (err) {
     console.error("get-active-question error:", err);
     return NextResponse.json(

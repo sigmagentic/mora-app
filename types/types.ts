@@ -46,4 +46,6 @@ export interface GameQuestion {
   answers: GameQuestionAnswer[];
   /** When set, this question is Arcium-enabled for verifiable aggregation on the Arcium network. */
   arciumPollId?: number;
+  arciumPolSig?: string;
+  arciumFinalizedPolSig?: string;
 }
