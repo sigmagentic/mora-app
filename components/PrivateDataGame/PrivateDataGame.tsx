@@ -577,7 +577,7 @@ export function PrivateDataGame({
                   />
                 </div>
 
-                <div className="text-[8px] text-gray-500 whitespace-pre-wrap overflow-x-auto">
+                <div className="text-[8px] text-gray-500 whitespace-pre-wrap overflow-x-auto max-w-[250px] md:max-w-full">
                   debug: q_id: {randomQuestion?.id}, a_ids:{" "}
                   {randomQuestion?.answers.map((a) => a.id).join(", ")},
                   a_PollId: {randomQuestion?.arciumPollId ?? "na"}, a_PolSig:{" "}

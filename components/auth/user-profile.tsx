@@ -41,6 +41,7 @@ import {
 } from "@/types/types";
 import { PrivateDataGame } from "../PrivateDataGame/PrivateDataGame";
 import { PastResults } from "../PrivateDataGame/PastResults";
+import { BetTab } from "../Bet/BetTab";
 import { AboutAppSlideshow } from "../AboutAppSlideshow";
 import {
   buildMoraResponsePayload,
@@ -1455,22 +1456,19 @@ export function UserProfile({
                     value="privacy-data-game"
                     className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm"
                   >
-                    <span className="text-xs">+</span>
                     Game
                   </TabsTrigger>
                   <TabsTrigger
                     value="past-results"
                     className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm"
                   >
-                    <span className="text-xs">+</span>
                     Results
                   </TabsTrigger>
                   <TabsTrigger
-                    value="predictions"
+                    value="bet"
                     className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm"
                   >
-                    <span className="text-xs">+</span>
-                    Predictions
+                    Bet
                   </TabsTrigger>
                 </TabsList>
                 {/* Private Data Game */}
@@ -1806,18 +1804,27 @@ export function UserProfile({
                   </Card>
                 </TabsContent>
 
-                <TabsContent value="predictions">
-                  <Card className="mt-4">
-                    <CardHeader>
-                      <CardTitle>Predictions</CardTitle>
-                      <CardDescription className="text-gray-600 text-xs min-h-[300px]">
-                        <span className="mr-2">👀</span>
-                        Want to bet on how the masses will respond to these
-                        morality questions? Private and verifiable prediction
-                        markets coming soon...
-                      </CardDescription>
-                    </CardHeader>
-                  </Card>
+                <TabsContent value="bet">
+                  <div className="relative">
+                    <Card className="mt-4">
+                      <CardHeader>
+                        <CardTitle>Bet</CardTitle>
+                        <CardDescription className="text-gray-600 text-xs">
+                          Bet XP on which answer will win the daily
+                          Arcium-Enabled Morality Question.
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <BetTab onRefreshUser={onRefreshUserServerProfile} />
+                      </CardContent>
+                    </Card>
+                    {process.env.NEXT_PUBLIC_ENABLE_BET !== "true" && (
+                      <div
+                        className="absolute inset-0 rounded-lg bg-white/60 dark:bg-gray-950/60 backdrop-blur-[1px] pointer-events-auto z-10"
+                        aria-hidden="true"
+                      />
+                    )}
+                  </div>
                 </TabsContent>
               </Tabs>
             </CardContent>
