@@ -156,6 +156,16 @@ export default function Home() {
                       <Play className="w-3 h-3 mr-1" />
                       Demo Video
                     </Button>
+                    <Button
+                      onClick={() => {
+                        window.open("https://x.com/mora_am_i", "_blank");
+                      }}
+                      variant="outline"
+                      className="mb-2 ml-2 w-fit h-8 mt-2 border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 text-xs"
+                    >
+                      <Twitter className="w-4 h-4 mr-1" />
+                      Stay Updated
+                    </Button>
                   </div>
 
                   <AuthForm onAuthSuccess={handleAuthSuccess} />
@@ -183,16 +193,20 @@ export default function Home() {
       <footer className="w-full py-2 px-4">
         <div className="container mx-auto text-center flex flex-row items-center justify-center">
           {appVersion && (
-            <p className="text-[10px] text-gray-400">v{appVersion}</p>
+            <p className="text-[10px] text-gray-400">v{appVersion} •</p>
           )}
 
           <a
             href="https://x.com/mora_am_i"
             target="_blank"
-            title="Follow us on X"
+            className="flex items-center"
+            title="Stay Updated on X"
             rel="noopener noreferrer"
           >
-            <Twitter className="w-4 h-4 text-gray-400 ml-2" />
+            <Twitter className="w-4 h-4 text-gray-400 ml-2 mr-1" />
+            <span className="text-[8px] text-gray-400 hover:text-gray-600">
+              Stay Updated
+            </span>
           </a>
         </div>
       </footer>
