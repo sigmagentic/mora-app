@@ -3,6 +3,14 @@
     {
       "path": "/api/cron/keepalive",
       "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/cron/test-activity-answers",
+      "schedule": "0 12 * * *"
+    },
+    {
+      "path": "/api/cron/test-activity-bets",
+      "schedule": "0 18 * * *"
     }
   ]
 }
