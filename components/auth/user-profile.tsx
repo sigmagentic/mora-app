@@ -1071,8 +1071,8 @@ export function UserProfile({
 
     saveStr += `answeredOnTs: ${Date.now()}\n`;
 
-    if (question.arciumPollId != null) {
-      saveStr += `arciumPollId: ${question.arciumPollId}\n`;
+    if (question.arcium_poll_id != null) {
+      saveStr += `arciumPollId: ${question.arcium_poll_id}\n`;
     }
 
     saveStr = saveStr + "\n" + newSecureNoteSession;

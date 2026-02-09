@@ -2,11 +2,15 @@
 
 import { headers } from "next/headers";
 
-export type DashDataResult = {
-  data_sections: Record<string, unknown[]>;
-} | { error: string };
+export type DashDataResult =
+  | {
+      data_sections: Record<string, unknown[]>;
+    }
+  | { error: string };
 
-export type ResetResult = { success: true; resetCount: number } | { error: string };
+export type ResetResult =
+  | { success: true; resetCount: number }
+  | { error: string };
 
 export type AddNewResult =
   | { success: true; questionId: number; answerCount: number }
@@ -39,7 +43,9 @@ export async function refreshDashSections(
 
   const base = await getBaseUrl();
   const url = sections
-    ? `${base}/api/private-data-game/manage/dash-data?sections=${encodeURIComponent(sections)}`
+    ? `${base}/api/private-data-game/manage/dash-data?sections=${encodeURIComponent(
+        sections
+      )}`
     : `${base}/api/private-data-game/manage/dash-data`;
 
   try {
@@ -105,9 +111,11 @@ export async function addNewQuestionAnswerSet(
       cache: "no-store",
     });
     const body = await res.json().catch(() => ({}));
+
     if (!res.ok) {
       return { error: (body.error as string) || res.statusText };
     }
+
     return {
       success: true,
       questionId: body.questionId as number,
@@ -185,7 +193,9 @@ export async function getCommitmentsByEpoch(
   }
 
   const base = await getBaseUrl();
-  const url = `${base}/api/private-data-game/manage/commitments-by-epoch?epoch_id=${encodeURIComponent(epochId)}`;
+  const url = `${base}/api/private-data-game/manage/commitments-by-epoch?epoch_id=${encodeURIComponent(
+    epochId
+  )}`;
 
   try {
     const res = await fetch(url, {

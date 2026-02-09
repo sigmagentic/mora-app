@@ -81,6 +81,8 @@ export function PrivateDataGame({
     useState<boolean>(false);
   const [reasoning, setReasoning] = useState("");
   const [dailyActiveOffline, setDailyActiveOffline] = useState<boolean>(false);
+  const [hourlyActiveOffline, setHourlyActiveOffline] =
+    useState<boolean>(false);
 
   useEffect(() => {
     const updateTime = () => {
@@ -137,11 +139,13 @@ export function PrivateDataGame({
     }
   }, [randomQuestion]);
 
-  const getRandomQuestion = async () => {
+  const getRandomQuestion = async (type: "hourly" | "daily") => {
     try {
       setFetchingActiveQuestion(true);
 
-      const res = await fetch(`/api/private-data-game/get-active-question`);
+      const res = await fetch(
+        `/api/private-data-game/get-active-question?type=${type}`
+      );
 
       const body = await res.json();
 
@@ -156,8 +160,10 @@ export function PrivateDataGame({
         return;
       }
 
-      const dailyActive = body.dailyActive ?? null;
-      setDailyActiveOffline(dailyActive === null);
+      if (type === "daily") {
+        const dailyActive = body.dailyActive ?? null;
+        setDailyActiveOffline(dailyActive === null);
+      }
 
       const notices: string[] = Array.isArray(body.specificNotices)
         ? body.specificNotices
@@ -166,10 +172,15 @@ export function PrivateDataGame({
         .filter((s) => typeof s === "string" && s.trim().length > 0)
         .forEach((text) => toast.message("Notice", text));
 
-      return {
-        hourlyActive: body.hourlyActive ?? null,
-        dailyActive,
-      };
+      if (type === "hourly") {
+        return {
+          hourlyActive: body.hourlyActive ?? null,
+        };
+      } else if (type === "daily") {
+        return {
+          dailyActive: body.dailyActive ?? null,
+        };
+      }
     } catch (err) {
       console.error("Error fetching active question:", err);
       toast.error("Error", "Error fetching active question");
@@ -183,15 +194,17 @@ export function PrivateDataGame({
       setSelectedHour(hour);
       setSelectedSource("hourly");
 
-      const data = await getRandomQuestion();
+      const data = await getRandomQuestion("hourly");
 
       if (data?.hourlyActive) {
         setRandomQuestion(data.hourlyActive);
-      }
+        setHourlyActiveOffline(false);
+      } else {
+        setSelectedSource(null);
 
-      // Update offline state for daily if needed
-      if (data?.dailyActive === null) {
-        setDailyActiveOffline(true);
+        toast.error("Error", "Hourly Morality Question is currently offline.");
+
+        setHourlyActiveOffline(true);
       }
 
       setSelectedAnswer(null);
@@ -202,7 +215,7 @@ export function PrivateDataGame({
     setSelectedSource("daily");
     setSelectedHour(null);
 
-    const data = await getRandomQuestion();
+    const data = await getRandomQuestion("daily");
 
     if (data?.dailyActive) {
       setRandomQuestion(data.dailyActive);
@@ -438,11 +451,11 @@ export function PrivateDataGame({
             const isArciumActive =
               isActive &&
               selectedSource === "hourly" &&
-              randomQuestion?.arciumPollId != null &&
-              randomQuestion?.arciumPolSig != null &&
-              randomQuestion?.arciumPolSig.trim() !== "" &&
-              randomQuestion?.arciumFinalizedPolSig != null &&
-              randomQuestion?.arciumFinalizedPolSig.trim() !== "";
+              randomQuestion?.arcium_poll_id != null &&
+              randomQuestion?.arcium_pol_sig != null &&
+              randomQuestion?.arcium_pol_sig.trim() !== "" &&
+              randomQuestion?.arcium_finalized_pol_sig != null &&
+              randomQuestion?.arcium_finalized_pol_sig.trim() !== "";
 
             return (
               <div
@@ -523,11 +536,12 @@ export function PrivateDataGame({
                 <div className="flex flex-col gap-2">
                   <DialogTitle className="flex items-center gap-2 flex-wrap">
                     Question
-                    {randomQuestion?.arciumPollId &&
-                      randomQuestion?.arciumPolSig &&
-                      randomQuestion?.arciumPolSig.trim() !== "" &&
-                      randomQuestion?.arciumFinalizedPolSig &&
-                      randomQuestion?.arciumFinalizedPolSig.trim() !== "" && (
+                    {randomQuestion?.arcium_poll_id &&
+                      randomQuestion?.arcium_pol_sig &&
+                      randomQuestion?.arcium_pol_sig.trim() !== "" &&
+                      randomQuestion?.arcium_finalized_pol_sig &&
+                      randomQuestion?.arcium_finalized_pol_sig.trim() !==
+                        "" && (
                         <Badge
                           variant="secondary"
                           className="bg-gradient-to-br from-green-500 to-violet-200 dark:from-green-900/50 dark:to-violet-900/50 border-violet-500 ring-2 ring-violet-300 dark:ring-violet-700 font-semibold text-[10px] px-2 py-1"
@@ -536,11 +550,11 @@ export function PrivateDataGame({
                         </Badge>
                       )}
                   </DialogTitle>
-                  {randomQuestion?.arciumPollId &&
-                    randomQuestion?.arciumPolSig &&
-                    randomQuestion?.arciumPolSig.trim() !== "" &&
-                    randomQuestion?.arciumFinalizedPolSig &&
-                    randomQuestion?.arciumFinalizedPolSig.trim() !== "" && (
+                  {randomQuestion?.arcium_poll_id &&
+                    randomQuestion?.arcium_pol_sig &&
+                    randomQuestion?.arcium_pol_sig.trim() !== "" &&
+                    randomQuestion?.arcium_finalized_pol_sig &&
+                    randomQuestion?.arcium_finalized_pol_sig.trim() !== "" && (
                       <p className="text-[10px] text-green-600 dark:text-green-400">
                         This question&apos;s results will be verifiable on the
                         Arcium network and soon be part of prediction markets.
@@ -580,15 +594,15 @@ export function PrivateDataGame({
                 <div className="text-[8px] text-gray-500 whitespace-pre-wrap overflow-x-auto max-w-[250px] md:max-w-full">
                   debug: q_id: {randomQuestion?.id}, a_ids:{" "}
                   {randomQuestion?.answers.map((a) => a.id).join(", ")},
-                  a_PollId: {randomQuestion?.arciumPollId ?? "na"}, a_PolSig:{" "}
-                  {randomQuestion?.arciumPolSig &&
-                  randomQuestion?.arciumPolSig.trim() !== ""
-                    ? randomQuestion?.arciumPolSig
+                  a_PollId: {randomQuestion?.arcium_poll_id ?? "na"}, a_PolSig:{" "}
+                  {randomQuestion?.arcium_pol_sig &&
+                  randomQuestion?.arcium_pol_sig.trim() !== ""
+                    ? randomQuestion?.arcium_pol_sig
                     : "na"}
                   , a_FinalizedPolSig:{" "}
-                  {randomQuestion?.arciumFinalizedPolSig &&
-                  randomQuestion?.arciumFinalizedPolSig.trim() !== ""
-                    ? randomQuestion?.arciumFinalizedPolSig
+                  {randomQuestion?.arcium_finalized_pol_sig &&
+                  randomQuestion?.arcium_finalized_pol_sig.trim() !== ""
+                    ? randomQuestion?.arcium_finalized_pol_sig
                     : "na"}
                   ,
                 </div>
