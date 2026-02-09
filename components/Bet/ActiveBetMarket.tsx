@@ -233,7 +233,7 @@ export function ActiveBetMarket({
             <img
               src={market.img}
               alt=""
-              className="h-24 w-full sm:h-28 sm:w-36 rounded-lg object-cover border border-gray-100"
+              className="h-24 w-full sm:h-28 sm:w-36 rounded-lg object-cover border border-gray-100 grayscale"
             />
           ) : (
             <div className="h-24 w-full sm:h-28 sm:w-36 rounded-lg bg-gray-100 border border-gray-100 flex items-center justify-center text-gray-400 text-xs">
