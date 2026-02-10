@@ -160,7 +160,8 @@ function ResolvedRow({
           <div className="text-[9px] text-gray-700 bg-gray-100 p-2 rounded-md">
             {participated ? (
               betSummary ? (
-                <p className="text-sm text-gray-700">
+                <p>
+                  ℹ️{` `}
                   {betSummary}
                   {outcomeSummary && ` ${outcomeSummary}`}
                 </p>
