@@ -63,7 +63,7 @@ function ResultRow({ item }: { item: PastResultItem }) {
             {isArcium && (
               <Badge
                 variant="secondary"
-                className="bg-violet-100 dark:bg-violet-900/50 text-violet-700 dark:text-violet-300 border-violet-200 dark:border-violet-800 text-[10px] font-semibold"
+                className="bg-violet-100 text-violet-700 border-violet-200 text-[10px] font-semibold"
               >
                 ✨ Arcium
               </Badge>

@@ -82,6 +82,36 @@ function ResolvedRow({
   const participated = item.myBets.answer0 > 0 || item.myBets.answer1 > 0;
   const isRefund = item.resolutionType === "DEACTIVATE";
 
+  const a0 = item.myBets.answer0;
+  const a1 = item.myBets.answer1;
+  const betParts: string[] = [];
+  if (a0 > 0) betParts.push(`${a0} XP on ${item.answerAText || "answer 1"}`);
+  if (a1 > 0) betParts.push(`${a1} XP on ${item.answerBText || "answer 2"}`);
+  const betSummary =
+    betParts.length > 0 ? `You bet ${betParts.join(" and ")}.` : "";
+
+  const totalStaked = a0 + a1;
+  const winningStake =
+    item.winningAnswer === 0 ? a0 : item.winningAnswer === 1 ? a1 : 0;
+  const outcomeSummary = (() => {
+    if (isRefund) {
+      return totalStaked > 0
+        ? `The market was cancelled. You get a refund of ${item.myRefundable} XP.`
+        : "";
+    }
+    if (item.myClaimed != null) {
+      return `You won the bet and received your stake plus winnings (${item.myClaimed} XP claimed).`;
+    }
+    if (item.canClaim && item.myWinnings != null) {
+      const winnings = item.myWinnings - winningStake;
+      return `You won the bet so you get back your stake of ${winningStake} XP plus ${winnings} XP (your share of winnings).`;
+    }
+    if (totalStaked > 0 && item.winningAnswer != null) {
+      return `You lost the bet so you lose all your XP (${totalStaked} XP in total).`;
+    }
+    return "";
+  })();
+
   return (
     <Card className="overflow-hidden border-gray-200/80 bg-white/95">
       <div className="flex flex-col sm:flex-row gap-4 p-4 sm:p-5">
@@ -127,6 +157,17 @@ function ResolvedRow({
             )}
           </div>
 
+          {participated ? (
+            betSummary ? (
+              <p className="text-sm text-gray-700">
+                {betSummary}
+                {outcomeSummary && ` ${outcomeSummary}`}
+              </p>
+            ) : null
+          ) : (
+            <p className="text-sm text-gray-500">ℹ️ You did not bet on this</p>
+          )}
+
           {isRefund ? (
             <Badge
               variant="secondary"
@@ -144,6 +185,7 @@ function ResolvedRow({
                     : "border-gray-100 bg-gray-50"
                 }`}
               >
+                <span className="text-gray-500 shrink-0">Answer 1:</span>
                 <span className="text-gray-700 truncate max-w-[140px]">
                   {item.answerAText}
                 </span>
@@ -159,6 +201,7 @@ function ResolvedRow({
                     : "border-gray-100 bg-gray-50"
                 }`}
               >
+                <span className="text-gray-500 shrink-0">Answer 2:</span>
                 <span className="text-gray-700 truncate max-w-[140px]">
                   {item.answerBText}
                 </span>

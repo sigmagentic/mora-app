@@ -39,7 +39,7 @@ function Countdown({ endsAt }: { endsAt: string | null }) {
     const s = String(endsAt).trim();
     const normalized = s.includes("T") ? s : s.replace(" ", "T");
     const end = new Date(
-      normalized.endsWith("Z") ? normalized : normalized + "Z"
+      normalized.endsWith("Z") ? normalized : normalized + "Z",
     ).getTime();
     const update = () => {
       const now = Date.now();
@@ -49,9 +49,10 @@ function Countdown({ endsAt }: { endsAt: string | null }) {
         return;
       }
       const diff = end - now;
-      const m = Math.floor(diff / 60000);
+      const h = Math.floor(diff / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
       const s = Math.floor((diff % 60000) / 1000);
-      setRemaining(`${m}m ${s}s`);
+      setRemaining(`${h}h ${m}m ${s}s`);
     };
     update();
     const id = setInterval(update, 1000);
@@ -73,9 +74,11 @@ function Countdown({ endsAt }: { endsAt: string | null }) {
 export function ActiveBetMarket({
   market,
   onPlaceSuccess,
+  readOnly = false,
 }: {
   market: MarketData;
-  onPlaceSuccess: () => void;
+  onPlaceSuccess?: () => void;
+  readOnly?: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
   const [betAmount0, setBetAmount0] = useState("");
@@ -113,7 +116,7 @@ export function ActiveBetMarket({
       new Date(
         bettingEndsAtStr.endsWith("Z")
           ? bettingEndsAtStr
-          : bettingEndsAtStr + "Z"
+          : bettingEndsAtStr + "Z",
       ).getTime();
   const availableXp =
     localMarket.userTotalXp -
@@ -163,7 +166,7 @@ export function ActiveBetMarket({
         title: "Bet placed",
         description: `${xpAmount} XP on answer ${answerBit + 1}`,
       });
-      onPlaceSuccess();
+      onPlaceSuccess?.();
     } catch (e) {
       toast({
         title: "Error",
@@ -211,7 +214,7 @@ export function ActiveBetMarket({
       setBetAmount0("");
       setBetAmount1("");
       toast({ title: "Bet removed", description: `${toRemove} XP withdrawn` });
-      onPlaceSuccess();
+      onPlaceSuccess?.();
     } catch (e) {
       toast({
         title: "Error",
@@ -246,7 +249,7 @@ export function ActiveBetMarket({
             <h3 className="font-semibold text-gray-900 text-sm sm:text-base">
               {market.title ?? "Daily Arcium Question"}
             </h3>
-            <Badge className="bg-violet-100 dark:bg-violet-900/50 text-violet-700 dark:text-violet-300 border-violet-200">
+            <Badge className="bg-violet-100 text-violet-700 border-violet-200 hover:bg-gray-50">
               ✨ Arcium
             </Badge>
           </div>
@@ -276,11 +279,18 @@ export function ActiveBetMarket({
             )}
           </div>
 
-          <div className="flex items-center justify-between text-xs text-gray-500">
-            <span>Your XP: {localMarket.userTotalXp}</span>
-            <span>Available to bet: {availableXp}</span>
-            <Countdown endsAt={market.bettingEndsAt} />
-          </div>
+          {!readOnly && (
+            <div className="flex items-center justify-between text-xs text-gray-500">
+              <span>Your XP: {localMarket.userTotalXp}</span>
+              <span>Available to bet: {availableXp}</span>
+              <Countdown endsAt={market.bettingEndsAt} />
+            </div>
+          )}
+          {readOnly && (
+            <div className="flex items-center justify-end text-xs text-gray-500">
+              <Countdown endsAt={market.bettingEndsAt} />
+            </div>
+          )}
 
           {totalPool > 0 && (
             <p className="text-xs text-gray-600">
@@ -309,55 +319,67 @@ export function ActiveBetMarket({
                 className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-lg border border-gray-200 bg-gray-50/80 px-3 py-2"
               >
                 <div className="min-w-0">
-                  <p className="text-xs sm:text-sm text-gray-700">{ans.text}</p>
+                  <p className="text-xs sm:text-sm text-gray-700">
+                    <span className="font-medium text-gray-500 shrink-0">
+                      Answer {idx + 1}:
+                    </span>{" "}
+                    {ans.text}
+                  </p>
                   <p className="text-xs text-gray-500 mt-0.5">
-                    Total: {total} XP {myBet > 0 && `• Your bet: ${myBet} XP`}
+                    Total: {total} XP {!readOnly && myBet > 0 && `• Your bet: ${myBet} XP`}
                   </p>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <Input
-                    type="number"
-                    min={1}
-                    max={availableXp}
-                    placeholder="XP"
-                    value={betAmount}
-                    onChange={(e) =>
-                      setBetAmount(e.target.value.replace(/\D/g, ""))
-                    }
-                    disabled={disabled}
-                    className="w-20 h-8 text-sm"
-                  />
-                  <Button
-                    size="sm"
-                    variant="default"
-                    onClick={() => placeBet(answerBit, amt)}
-                    disabled={disabled || amt <= 0}
-                  >
-                    Bet
-                  </Button>
-                  {myBet > 0 && (
+                {!readOnly && (
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Input
+                      type="number"
+                      min={1}
+                      max={availableXp}
+                      placeholder="XP"
+                      value={betAmount}
+                      onChange={(e) =>
+                        setBetAmount(e.target.value.replace(/\D/g, ""))
+                      }
+                      disabled={disabled}
+                      className="w-20 h-8 text-sm"
+                    />
                     <Button
                       size="sm"
-                      variant="outline"
-                      onClick={() =>
-                        removeBet(
-                          answerBit,
-                          amt > 0 ? Math.min(amt, myBet) : myBet
-                        )
-                      }
-                      disabled={disabled || loading}
+                      variant="default"
+                      onClick={() => placeBet(answerBit, amt)}
+                      disabled={disabled || amt <= 0}
                     >
-                      Remove {amt > 0 ? Math.min(amt, myBet) : myBet}
+                      Bet
                     </Button>
-                  )}
-                </div>
+                    {myBet > 0 && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() =>
+                          removeBet(
+                            answerBit,
+                            amt > 0 ? Math.min(amt, myBet) : myBet,
+                          )
+                        }
+                        disabled={disabled || loading}
+                      >
+                        Remove {amt > 0 ? Math.min(amt, myBet) : myBet}
+                      </Button>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })}
 
-          {localMarket.userTotalXp <= 0 && (
+          {!readOnly && localMarket.userTotalXp <= 0 && (
             <p className="text-xs text-amber-600">
               Earn XP by answering questions to bet.
+            </p>
+          )}
+          {readOnly && (
+            <p className="text-xs text-violet-600 font-medium">
+              Login to place your bet
             </p>
           )}
         </div>

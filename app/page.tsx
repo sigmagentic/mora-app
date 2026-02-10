@@ -8,20 +8,52 @@ import { QuestionPreview } from "@/components/PrivateDataGame/QuestionPreview";
 import { AppUser } from "@/types/types";
 import Image from "next/image";
 import { PastResults } from "@/components/PrivateDataGame/PastResults";
+import { ActiveBetMarket } from "@/components/Bet/ActiveBetMarket";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Play, Twitter } from "lucide-react";
+
+type MarketData = {
+  id: number;
+  title: string | null;
+  img: string | null;
+  text: string;
+  epochId: string;
+  closesAt: string | null;
+  bettingEndsAt: string | null;
+  answers: { id: number; text: string; answerBit: 0 | 1 }[];
+  totalXpAnswer0: number;
+  totalXpAnswer1: number;
+  myBets: { answer0: number; answer1: number };
+  userTotalXp: number;
+};
 
 export default function Home() {
   const [user, setUser] = useState<AppUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [appVersion, setAppVersion] = useState<string>("");
   const [prfKek, setPrfKek] = useState<CryptoKey | null>(null);
+  const [activeMarket, setActiveMarket] = useState<MarketData | null>(null);
 
   useEffect(() => {
     handleRefreshUserServerProfile();
     fetchVersion();
   }, []);
+
+  useEffect(() => {
+    if (user !== null) return;
+    const fetchActiveMarket = async () => {
+      try {
+        const res = await fetch("/api/private-data-game/bet/market");
+        const data = await res.json();
+        if (res.ok && data.market) setActiveMarket(data.market as MarketData);
+        else setActiveMarket(null);
+      } catch {
+        setActiveMarket(null);
+      }
+    };
+    fetchActiveMarket();
+  }, [user]);
 
   const fetchVersion = async () => {
     try {
@@ -174,7 +206,22 @@ export default function Home() {
                   <QuestionPreview />
                 </div>
               </div>
-              <div className="bgx-green-500 mt-10">
+              <div className="bgx-green-500 mt-10 space-y-6">
+                {activeMarket && (
+                  <Card className="border-0 shadow-2xl bg-white/95 backdrop-blur-sm">
+                    <CardHeader>
+                      <CardTitle className="text-center text-xl font-bold text-gray-900">
+                        Active betting market in progress...
+                        <p className="text-center text-sm text-gray-500 font-normal">
+                          Bet on the world's morality!
+                        </p>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <ActiveBetMarket market={activeMarket} readOnly />
+                    </CardContent>
+                  </Card>
+                )}
                 <Card className="border-0 shadow-2xl bg-white/95 backdrop-blur-sm">
                   <CardHeader>
                     <CardTitle className="text-center text-xl font-bold text-gray-900">
