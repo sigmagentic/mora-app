@@ -85,8 +85,8 @@ function ResolvedRow({
   const a0 = item.myBets.answer0;
   const a1 = item.myBets.answer1;
   const betParts: string[] = [];
-  if (a0 > 0) betParts.push(`${a0} XP on ${item.answerAText || "answer 1"}`);
-  if (a1 > 0) betParts.push(`${a1} XP on ${item.answerBText || "answer 2"}`);
+  if (a0 > 0) betParts.push(`${a0} XP on "answer 1" }`);
+  if (a1 > 0) betParts.push(`${a1} XP on "answer 2"}`);
   const betSummary =
     betParts.length > 0 ? `You bet ${betParts.join(" and ")}.` : "";
 
@@ -157,16 +157,18 @@ function ResolvedRow({
             )}
           </div>
 
-          {participated ? (
-            betSummary ? (
-              <p className="text-sm text-gray-700">
-                {betSummary}
-                {outcomeSummary && ` ${outcomeSummary}`}
-              </p>
-            ) : null
-          ) : (
-            <p className="text-sm text-gray-500">ℹ️ You did not bet on this</p>
-          )}
+          <div className="text-[9px] text-gray-700 bg-gray-100 p-2 rounded-md">
+            {participated ? (
+              betSummary ? (
+                <p className="text-sm text-gray-700">
+                  {betSummary}
+                  {outcomeSummary && ` ${outcomeSummary}`}
+                </p>
+              ) : null
+            ) : (
+              <p>ℹ️ You did not bet on this</p>
+            )}
+          </div>
 
           {isRefund ? (
             <Badge

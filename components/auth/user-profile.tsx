@@ -103,74 +103,8 @@ export function UserProfile({
   const { setVisible: setWalletModalVisible } = useWalletModal();
   const connectedAddress = publicKey?.toBase58();
 
-  const handleLogout = async () => {
-    setIsLoggingOut(true);
-
-    try {
-      await fetch("/api/auth/logout", { method: "POST" });
-
-      CACHED_VMK = null;
-      setVmkInMemory(false);
-      onLogout();
-    } catch (error) {
-      console.error("Logout error:", error);
-    } finally {
-      setIsLoggingOut(false);
-    }
-  };
-
-  // When user has a saved wallet but connects a different one, show error and disconnect
-  useEffect(() => {
-    if (
-      connected &&
-      connectedAddress &&
-      user.solanaWallet &&
-      connectedAddress !== user.solanaWallet
-    ) {
-      toast.error(
-        "Wrong wallet",
-        "This is not the wallet linked to your account. Please connect the same wallet you saved."
-      );
-      disconnect();
-    }
-  }, [connected, connectedAddress, user.solanaWallet, disconnect]);
-
-  const handleConnectSolana = () => {
-    setWalletModalVisible(true);
-  };
-
-  const handleSaveSolanaWallet = async () => {
-    if (!connectedAddress) return;
-    const confirmed = window.confirm(
-      "You can only connect a Solana wallet once to your account. Are you sure you want to save this address?"
-    );
-    if (!confirmed) return;
-    setSavingSolanaWallet(true);
-    try {
-      const formData = new FormData();
-      formData.append("solana_wallet", connectedAddress);
-      const res = await fetch("/api/user/update-user", {
-        method: "POST",
-        body: formData,
-        credentials: "include",
-      });
-      const body = await res.json();
-      if (!res.ok) {
-        toast.error("Error", body.error || "Failed to save wallet.");
-        return;
-      }
-      toast.success("Success", "Solana wallet saved to your account.");
-      onRefreshUserServerProfile();
-    } catch (e) {
-      console.error(e);
-      toast.error("Error", "Failed to save wallet.");
-    } finally {
-      setSavingSolanaWallet(false);
-    }
-  };
-
   const [selectedPrivateFile, setSelectedPrivateFile] = useState<File | null>(
-    null
+    null,
   ); // private file upload
   const [newSecureNoteSession, setNewSecureNoteSession] = useState<
     string | null
@@ -195,12 +129,28 @@ export function UserProfile({
   const [fetchingStoredFiles, setFetchingStoredFiles] = useState(false);
   const [inSecureGameMode, setInSecureGameMode] = useState(false);
 
+  // When user has a saved wallet but connects a different one, show error and disconnect
+  useEffect(() => {
+    if (
+      connected &&
+      connectedAddress &&
+      user.solanaWallet &&
+      connectedAddress !== user.solanaWallet
+    ) {
+      toast.error(
+        "Wrong wallet",
+        "This is not the wallet linked to your account. Please connect the same wallet you saved.",
+      );
+      disconnect();
+    }
+  }, [connected, connectedAddress, user.solanaWallet, disconnect]);
+
   // when the app has loaded and we have already fetched  the storaged file
   // lets check if there is a localstorage item for x-info-slideshow-shown-on-ts
   // if this does NOT exist OR if the ts is older than 7 days, lets show the slideshow
   useEffect(() => {
     const localStorageInfoSlideshowShownOnTs = localStorage.getItem(
-      "x-info-slideshow-shown-on-ts"
+      "x-info-slideshow-shown-on-ts",
     );
     if (
       !localStorageInfoSlideshowShownOnTs ||
@@ -255,20 +205,12 @@ export function UserProfile({
           if (sessionVaultPassword && sessionVaultPassword !== "") {
             console.log(
               "Decoded password from local storage:",
-              atob(sessionVaultPassword!)
+              atob(sessionVaultPassword!),
             );
 
             setVaultPassword(atob(sessionVaultPassword!));
 
             setTriggerAutoLoginAsCachedPwFound(true);
-
-            // // need to pull this off the thread as it needs vaultPassword state
-            // setTimeout(() => {
-            //   // autologin the user with the session cached password
-            //   handleVaultPasswordBasedVmkUnwrapping(false);
-            // }, 1500);
-
-            // setPasswordEnterOrReuseChecksHappening(false); // we can show the password UI now!
           } else {
             // setVaultMode("enter");
             setPasswordEnterOrReuseChecksHappening(false); // we can show the password UI now!
@@ -313,6 +255,56 @@ export function UserProfile({
     }
   }, [triggerAutoLoginAsCachedPwFound, vaultPassword]);
 
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+
+      CACHED_VMK = null;
+      setVmkInMemory(false);
+      onLogout();
+    } catch (error) {
+      console.error("Logout error:", error);
+    } finally {
+      setIsLoggingOut(false);
+    }
+  };
+
+  const handleConnectSolana = () => {
+    setWalletModalVisible(true);
+  };
+
+  const handleSaveSolanaWallet = async () => {
+    if (!connectedAddress) return;
+    const confirmed = window.confirm(
+      "You can only connect a Solana wallet once to your account. Are you sure you want to save this address?",
+    );
+    if (!confirmed) return;
+    setSavingSolanaWallet(true);
+    try {
+      const formData = new FormData();
+      formData.append("solana_wallet", connectedAddress);
+      const res = await fetch("/api/user/update-user", {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      });
+      const body = await res.json();
+      if (!res.ok) {
+        toast.error("Error", body.error || "Failed to save wallet.");
+        return;
+      }
+      toast.success("Success", "Solana wallet saved to your account.");
+      onRefreshUserServerProfile();
+    } catch (e) {
+      console.error(e);
+      toast.error("Error", "Failed to save wallet.");
+    } finally {
+      setSavingSolanaWallet(false);
+    }
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files && e.target.files[0];
     if (file) {
@@ -334,7 +326,7 @@ export function UserProfile({
         length: 256,
       },
       true, // extractable
-      ["encrypt", "decrypt"]
+      ["encrypt", "decrypt"],
     );
   }
 
@@ -363,7 +355,7 @@ export function UserProfile({
         length: 256,
       },
       true, // extractable (we need to wrap it)
-      ["encrypt", "decrypt"]
+      ["encrypt", "decrypt"],
     );
   }
 
@@ -376,7 +368,7 @@ export function UserProfile({
         iv,
       },
       dek,
-      plaintext
+      plaintext,
     );
 
     return {
@@ -396,7 +388,7 @@ export function UserProfile({
         iv,
       },
       vmk,
-      rawDEK
+      rawDEK,
     );
 
     return {
@@ -409,7 +401,7 @@ export function UserProfile({
   async function encryptFileForUpload(
     file: File,
     vmk: CryptoKey,
-    fileLabel?: string | null
+    fileLabel?: string | null,
   ) {
     const plaintext = await readFileAsArrayBuffer(file);
 
@@ -448,7 +440,7 @@ export function UserProfile({
       metadata: Record<string, any>;
     },
     _newSecureNoteSession: string,
-    storageFileId?: string
+    storageFileId?: string,
   ) {
     console.log({
       encryptedFileBytes: payload.encryptedFile.byteLength,
@@ -458,7 +450,7 @@ export function UserProfile({
     });
 
     const encryptedFileB64 = uint8ToBase64(
-      new Uint8Array(payload.encryptedFile)
+      new Uint8Array(payload.encryptedFile),
     );
     const fileIVB64 = uint8ToBase64(payload.fileIV);
     const encryptedDEKB64 = uint8ToBase64(new Uint8Array(payload.encryptedDEK));
@@ -503,7 +495,7 @@ export function UserProfile({
 
   const encryptAndUpload = async (
     isSecureNote: boolean = false,
-    useThisRawNewSecureNoteSessionText?: string
+    useThisRawNewSecureNoteSessionText?: string,
   ) => {
     let _newSecureNoteSession: string | null = newSecureNoteSession;
 
@@ -569,7 +561,7 @@ export function UserProfile({
       const encryptedPayload = await encryptFileForUpload(
         selectedFileToSave,
         CACHED_VMK,
-        newSecureNoteFileLabel
+        newSecureNoteFileLabel,
       );
 
       let res;
@@ -580,7 +572,7 @@ export function UserProfile({
           body: createMultipartFormData(
             encryptedPayload,
             _newSecureNoteSession!,
-            secureNoteEditModeFile.id
+            secureNoteEditModeFile.id,
           ),
           credentials: "include", // if you use cookies / sessions
         });
@@ -589,7 +581,7 @@ export function UserProfile({
           method: "POST",
           body: createMultipartFormData(
             encryptedPayload,
-            _newSecureNoteSession!
+            _newSecureNoteSession!,
           ),
           credentials: "include", // if you use cookies / sessions
         });
@@ -634,7 +626,7 @@ export function UserProfile({
   async function decryptDEKWithVMK(
     encryptedDEK: Uint8Array,
     dekIV: Uint8Array,
-    vmk: CryptoKey
+    vmk: CryptoKey,
   ): Promise<CryptoKey> {
     const rawDEK = await crypto.subtle.decrypt(
       {
@@ -642,7 +634,7 @@ export function UserProfile({
         iv: dekIV as any,
       },
       vmk,
-      encryptedDEK as any
+      encryptedDEK as any,
     );
 
     return crypto.subtle.importKey("raw", rawDEK, { name: "AES-GCM" }, false, [
@@ -654,7 +646,7 @@ export function UserProfile({
   async function decryptFileWithDEK(
     encryptedFile: Uint8Array,
     fileIV: Uint8Array,
-    dek: CryptoKey
+    dek: CryptoKey,
   ): Promise<ArrayBuffer> {
     return crypto.subtle.decrypt(
       {
@@ -662,7 +654,7 @@ export function UserProfile({
         iv: fileIV as any,
       },
       dek,
-      encryptedFile as any
+      encryptedFile as any,
     );
   }
 
@@ -678,7 +670,7 @@ export function UserProfile({
     const plaintextBuffer = await decryptFileWithDEK(
       encryptedFile,
       fileIV,
-      dek
+      dek,
     );
 
     return new Blob([plaintextBuffer], {
@@ -688,7 +680,7 @@ export function UserProfile({
 
   async function decryptAndDownloadFile(
     fileRow: any,
-    dontDownloadButReturnUrl = false
+    dontDownloadButReturnUrl = false,
   ) {
     if (!CACHED_VMK) {
       toast.error("Error", "Vault Master Key not available in memory.");
@@ -735,10 +727,6 @@ export function UserProfile({
       setFetchingStoredFiles(true);
 
       const res = await fetch(`/api/storage/get-storage`);
-      // const res = await fetch(
-      //   `/api/storage/get-storage?user_id=${encodeURIComponent(user.id)}`
-      // );
-
       const body = await res.json();
 
       if (!res.ok) {
@@ -746,19 +734,17 @@ export function UserProfile({
         return;
       }
 
-      // console.log("Fetched stored files:", body.files);
-
       // Separate private files and secure notes
       const secureNotes = body.files.filter(
-        (file: any) => file.storage_type === 1
+        (file: any) => file.storage_type === 1,
       );
 
       const privateFiles = body.files.filter(
-        (file: any) => file.storage_type === 2
+        (file: any) => file.storage_type === 2,
       );
 
       const privateGameSecureNote = body.files.find(
-        (file: any) => file.storage_type === 3
+        (file: any) => file.storage_type === 3,
       );
 
       setStoredPrivateFiles(privateFiles);
@@ -781,7 +767,7 @@ export function UserProfile({
         `/api/storage/delete-storage?id=${encodeURIComponent(fileId)}`,
         {
           method: "DELETE",
-        }
+        },
       );
 
       const body = await res.json();
@@ -842,7 +828,7 @@ export function UserProfile({
     const encryptedVMK = await crypto.subtle.encrypt(
       { name: "AES-GCM", iv },
       kek,
-      exportedVMK
+      exportedVMK,
     );
 
     // 5. IF PRF is available, we can also encrypt the VMK with that so both can be used
@@ -856,7 +842,7 @@ export function UserProfile({
       prf_encryptedVMK = await crypto.subtle.encrypt(
         { name: "AES-GCM", iv: prf_vmk_iv },
         prfKek,
-        exportedVMK
+        exportedVMK,
       );
     }
 
@@ -866,7 +852,7 @@ export function UserProfile({
     formData.append("kek_salt", saltBase64);
     formData.append(
       "encrypted_vmk",
-      uint8ToBase64(new Uint8Array(encryptedVMK))
+      uint8ToBase64(new Uint8Array(encryptedVMK)),
     );
     formData.append("vmk_iv", uint8ToBase64(iv));
     // formData.append("userId", user.id);
@@ -874,7 +860,7 @@ export function UserProfile({
     if (prfKek && prf_encryptedVMK && prf_vmk_iv) {
       formData.append(
         "prf_encrypted_vmk",
-        uint8ToBase64(new Uint8Array(prf_encryptedVMK))
+        uint8ToBase64(new Uint8Array(prf_encryptedVMK)),
       );
       formData.append("prf_vmk_iv", uint8ToBase64(prf_vmk_iv));
     }
@@ -913,7 +899,7 @@ export function UserProfile({
   };
 
   const handleVaultPasswordBasedVmkUnwrapping = async (
-    usePrfBasedUnwrapping?: boolean
+    usePrfBasedUnwrapping?: boolean,
   ) => {
     let kek = null;
     let encryptedVMK = null;
@@ -941,7 +927,7 @@ export function UserProfile({
       const vmkRaw = await crypto.subtle.decrypt(
         { name: "AES-GCM", iv: iv as any },
         kek,
-        encryptedVMK as any
+        encryptedVMK as any,
       );
 
       CACHED_VMK = await crypto.subtle.importKey(
@@ -949,7 +935,7 @@ export function UserProfile({
         vmkRaw,
         "AES-GCM",
         true, // extractable
-        ["encrypt", "decrypt"]
+        ["encrypt", "decrypt"],
       );
     } catch (decryptionError) {
       setVaultError("Incorrect vault password. Please try again.");
@@ -994,7 +980,7 @@ export function UserProfile({
       prf_encryptedVMK = await crypto.subtle.encrypt(
         { name: "AES-GCM", iv: prf_vmk_iv },
         prfKek,
-        exportedVMK
+        exportedVMK,
       );
 
       const formData = new FormData();
@@ -1003,7 +989,7 @@ export function UserProfile({
 
       formData.append(
         "prf_encrypted_vmk",
-        uint8ToBase64(new Uint8Array(prf_encryptedVMK))
+        uint8ToBase64(new Uint8Array(prf_encryptedVMK)),
       );
 
       formData.append("prf_vmk_iv", uint8ToBase64(prf_vmk_iv));
@@ -1020,13 +1006,13 @@ export function UserProfile({
         console.error("Delete error:", body);
         toast.error(
           "Error",
-          "Failed to commit the purely biometric-powered encryption. Please try again."
+          "Failed to commit the purely biometric-powered encryption. Please try again.",
         );
         return;
       } else {
         toast.success(
           "Success",
-          "Pure biometric-powered encryption enabled. Next time you login, it will take over and your password is only needed as a fallback!"
+          "Pure biometric-powered encryption enabled. Next time you login, it will take over and your password is only needed as a fallback!",
         );
 
         // lets get the latest auth status (which will have the PRF metadata and sync it with the UI)
@@ -1058,7 +1044,7 @@ export function UserProfile({
   const handlePrivateDataGameAnswerSelection = async (
     question: GameQuestion,
     answer: GameQuestionAnswer,
-    answerReasoning?: string
+    answerReasoning?: string,
   ) => {
     let saveStr = `questionId: ${question.id}\n`;
     saveStr += `question: ${question.text}\n`;
@@ -1093,7 +1079,7 @@ export function UserProfile({
     await handleAnswerChallengeGenerationAndCommitment(
       parseInt(questionId),
       epochId,
-      parseInt(answerBit) as AnswerBit
+      parseInt(answerBit) as AnswerBit,
     );
   };
 
@@ -1101,7 +1087,7 @@ export function UserProfile({
   const handleAnswerChallengeGenerationAndCommitment = async (
     questionId: number,
     epochId: string,
-    answerBit: AnswerBit
+    answerBit: AnswerBit,
   ): Promise<boolean> => {
     if (!CACHED_VMK) {
       toast.error("Error", "VMK not available in memory.");
@@ -1122,7 +1108,7 @@ export function UserProfile({
     const { ciphertext: encryptedAnswer, iv: encryptedAnswerIv } =
       await encryptAnswerForSecureStorage(
         answerBitBuffer.buffer as ArrayBuffer,
-        CACHED_VMK
+        CACHED_VMK,
       );
 
     // note that the encryptedAnswer decoding etc is probabaly all wrong right now (just a placeholder)
@@ -1152,7 +1138,7 @@ export function UserProfile({
       console.error("Save answer commitment error:", body);
       toast.error(
         "Error",
-        "Failed to save answer commitment." + (body.error || "Unknown error")
+        "Failed to save answer commitment." + (body.error || "Unknown error"),
       );
       return false;
     }
@@ -1202,7 +1188,7 @@ export function UserProfile({
           if (INFO_SLIDESHOW_SHOWN_AUTOMATICALLY) {
             localStorage.setItem(
               "x-info-slideshow-shown-on-ts",
-              new Date().toISOString()
+              new Date().toISOString(),
             );
           }
 
@@ -1255,7 +1241,7 @@ export function UserProfile({
                               (connectedAddress
                                 ? ` — ${connectedAddress.slice(
                                     0,
-                                    4
+                                    4,
                                   )}…${connectedAddress.slice(-4)}`
                                 : "")
                             : "Connect Solana"
@@ -1275,7 +1261,7 @@ export function UserProfile({
                             (connectedAddress
                               ? ` — ${connectedAddress.slice(
                                   0,
-                                  6
+                                  6,
                                 )}…${connectedAddress.slice(-6)}`
                               : "")
                           : "Connect Solana (devnet)"}
@@ -1303,20 +1289,31 @@ export function UserProfile({
                   )}
                 </Button>
                 {isDevicePRFSupported && prfKek && !user.prfEncryptedVmk && (
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-9 w-9 rounded-full shrink-0 text-gray-600 hover:bg-gray-50 hover:text-gray-700 animate-bounce"
-                    onClick={handleCommitLazyPRFSupport}
-                    disabled={committingPrfSupportToServer}
-                    title="Your device supports pure-biometrics encryption. Commit support now?"
-                  >
-                    {committingPrfSupportToServer ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <KeyRound className="h-4 w-4" />
-                    )}
-                  </Button>
+                  <Popover open>
+                    <PopoverTrigger asChild>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-9 w-9 rounded-full shrink-0 text-gray-600 hover:bg-gray-50 hover:text-gray-700 animate-bounce"
+                        onClick={handleCommitLazyPRFSupport}
+                        disabled={committingPrfSupportToServer}
+                        title="Your device supports pure-biometrics encryption. Commit support now?"
+                      >
+                        {committingPrfSupportToServer ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <KeyRound className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent side="bottom" align="start">
+                      <p className="text-[10px]">
+                        Your device supports biometrics-powered passwordless
+                        encryption that makes logging in super fast and easy.
+                        Click the key to enable now.
+                      </p>
+                    </PopoverContent>
+                  </Popover>
                 )}
               </div>
             ) : (
@@ -1389,14 +1386,14 @@ export function UserProfile({
                           {connected && connectedAddress
                             ? `${connectedAddress.slice(
                                 0,
-                                8
+                                8,
                               )}…${connectedAddress.slice(-8)}`
                             : user.solanaWallet
-                            ? `${user.solanaWallet.slice(
-                                0,
-                                8
-                              )}…${user.solanaWallet.slice(-8)}`
-                            : ""}
+                              ? `${user.solanaWallet.slice(
+                                  0,
+                                  8,
+                                )}…${user.solanaWallet.slice(-8)}`
+                              : ""}
                         </p>
                       ) : null}
                       {connected && connectedAddress && !user.solanaWallet && (
@@ -1527,6 +1524,9 @@ export function UserProfile({
                                 variant="outline"
                                 className="h-10 text-sm"
                               >
+                                <span className="text-green-500 mr-2 animate-pulse">
+                                  🟢
+                                </span>{" "}
                                 Create Private Data Vault to Start Game
                               </Button>
                               <p className="text-[10px] md:text-sm mt-2 text-left w-[90%] md:w-full">
@@ -1598,7 +1598,7 @@ export function UserProfile({
                                           secureNoteEditModeFile
                                             ? "editing"
                                             : "creating"
-                                        } this note?`
+                                        } this note?`,
                                       ) == true
                                     ) {
                                       setNewSecureNoteSession(null);
@@ -1643,13 +1643,13 @@ export function UserProfile({
                                   value={commitmentTestInput}
                                   onChange={(e) =>
                                     setCommitmentTestInput(
-                                      e.target.value as string
+                                      e.target.value as string,
                                     )
                                   }
                                   onKeyDown={(e) => {
                                     if (e.key === "Enter") {
                                       test_handleAnswerChallengeGeneration(
-                                        commitmentTestInput
+                                        commitmentTestInput,
                                       );
                                     }
                                   }}
@@ -1707,7 +1707,7 @@ export function UserProfile({
                                             handleDeleteFile(
                                               storedSecureNoteForPrivateGameFile.id,
                                               storedSecureNoteForPrivateGameFile
-                                                ?.metadata?.filename
+                                                ?.metadata?.filename,
                                             )
                                           }
                                           className="flex-shrink-0 p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition"
@@ -1718,7 +1718,7 @@ export function UserProfile({
                                         <button
                                           onClick={() =>
                                             decryptAndDownloadFile(
-                                              storedSecureNoteForPrivateGameFile
+                                              storedSecureNoteForPrivateGameFile,
                                             )
                                           }
                                           className="flex-shrink-0 p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition"
@@ -1730,7 +1730,7 @@ export function UserProfile({
                                           onClick={() => {
                                             setInSecureGameMode(true);
                                             decryptAndLoadFileToEdit(
-                                              storedSecureNoteForPrivateGameFile
+                                              storedSecureNoteForPrivateGameFile,
                                             );
                                           }}
                                           className={`flex-shrink-0 p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition ${
@@ -1902,6 +1902,9 @@ export function UserProfile({
                           onChange={(e) => setVaultConfirm(e.target.value)}
                           className="text-sm"
                         />
+                        <p className="text-[9px] text-gray-500">
+                          Password must be at least 8 characters long
+                        </p>
                         {vaultError && (
                           <p className="text-xs text-red-600">{vaultError}</p>
                         )}

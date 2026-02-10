@@ -16,7 +16,7 @@ import {
 // } from "@/app/api/private-data-game/arcium-mxe-logic/arcium-mxe-logic";
 
 export async function dailyController(
-  request: NextRequest
+  request: NextRequest,
 ): Promise<NextResponse> {
   try {
     let activeQuestionData: GameQuestion | null = null;
@@ -64,7 +64,7 @@ export async function dailyController(
     ) {
       console.error(
         "ERR-DAQ-H-2: Corrupted gameplay state as there are more than two active questions which should NOT happen",
-        activeQuestionsError
+        activeQuestionsError,
       );
 
       return NextResponse.json(
@@ -72,7 +72,7 @@ export async function dailyController(
           error:
             "ERR-DAQ-H-2: Corrupted gameplay state as there are more than two active questions which should NOT happen",
         },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -87,12 +87,12 @@ export async function dailyController(
     if (selectError) {
       console.error(
         "ERR-DAQ-H-3: Error checking active question:",
-        selectError
+        selectError,
       );
 
       return NextResponse.json(
         { error: "ERR-DAQ-H-3: Error checking active question" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -100,7 +100,7 @@ export async function dailyController(
     if (activeQuestionList && activeQuestionList.length > 1) {
       console.error(
         "ERR-DAQ-H-4: Corrupted gameplay state: multiple ACTIVE_ARCIUM questions with same epoch_id",
-        selectError
+        selectError,
       );
 
       return NextResponse.json(
@@ -108,7 +108,7 @@ export async function dailyController(
           error:
             "ERR-DAQ-H-4: Corrupted gameplay state: multiple ACTIVE_ARCIUM questions with same epoch_id",
         },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -128,7 +128,7 @@ export async function dailyController(
       await closeOtherActive(
         _targetEpochIdString,
         "AGGREGATING_ARCIUM",
-        "ACTIVE_ARCIUM"
+        "ACTIVE_ARCIUM",
       );
     } else {
       // ... no current ACTIVE_ARCIUM question was found, so we need to generate one and commit it to the DB
@@ -141,13 +141,14 @@ export async function dailyController(
         now,
         _targetEpochIdString,
         "AGGREGATING_ARCIUM",
-        "ACTIVE_ARCIUM"
+        "ACTIVE_ARCIUM",
+        specificNotices,
       );
 
       if (promoteOrCreateNewActiveQuestionError) {
         console.error(
           "Error promoting or creating new active question:",
-          promoteOrCreateNewActiveQuestionErrorObject
+          promoteOrCreateNewActiveQuestionErrorObject,
         );
         return NextResponse.json(
           {
@@ -155,7 +156,7 @@ export async function dailyController(
               (promoteOrCreateNewActiveQuestionErrorObject as Error)?.message ||
               "ERR-DAQ-H-13: Error promoting or creating new active question",
           },
-          { status: 500 }
+          { status: 500 },
         );
       }
 
@@ -173,7 +174,7 @@ export async function dailyController(
       console.error("ERR-DAQ-H-10: No questions available");
       return NextResponse.json(
         { error: "ERR-DAQ-H-10: No questions available" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -186,7 +187,7 @@ export async function dailyController(
     if (getAnswersError || !answers) {
       console.error(
         "ERR-DAQ-H-11: Error fetching answers:",
-        getAnswersErrorObject?.message || "Unknown error"
+        getAnswersErrorObject?.message || "Unknown error",
       );
 
       return NextResponse.json(
@@ -195,7 +196,7 @@ export async function dailyController(
             "ERR-DAQ-H-11: Error fetching answers: " +
             (getAnswersErrorObject?.message || "Unknown error"),
         },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -239,7 +240,7 @@ export async function dailyController(
     // ... AT THIS STAGE: we are not sure the state of the DB
     return NextResponse.json(
       { error: "ERR-DAQ-H-12: Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

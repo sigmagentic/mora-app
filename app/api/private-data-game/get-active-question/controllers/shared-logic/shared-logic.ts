@@ -17,7 +17,7 @@ import {
 export const closeOtherActive = async (
   epochIdString: string,
   targetGameStatus: string, // AGGREGATING or AGGREGATING_ARCIUM
-  currentGameStatus: string // ACTIVE or ACTIVE_ARCIUM
+  currentGameStatus: string, // ACTIVE or ACTIVE_ARCIUM
 ) => {
   const { error: closeErr } = await supabase
     .from("questions_repo")
@@ -33,7 +33,8 @@ export async function promoteOrCreateAndCommitNewActiveQuestion(
   now: Date,
   epochIdString: string,
   targetGameStatus: string, // AGGREGATING or AGGREGATING_ARCIUM
-  currentGameStatus: string // ACTIVE or ACTIVE_ARCIUM
+  currentGameStatus: string, // ACTIVE or ACTIVE_ARCIUM
+  specificNotices: string[], // work on the this reference directly
 ): Promise<{
   error: boolean;
   errorObject: Error | null;
@@ -106,7 +107,7 @@ export async function promoteOrCreateAndCommitNewActiveQuestion(
       if (randomChoicesForNextQuestionError) {
         console.error(
           "ERR-DAQ-H-5: Error random prev finalized question:",
-          randomChoicesForNextQuestionError
+          randomChoicesForNextQuestionError,
         );
 
         throw new Error("ERR-DAQ-H-5: No questions available");
@@ -125,11 +126,11 @@ export async function promoteOrCreateAndCommitNewActiveQuestion(
       // ... AT THIS STAGE: there is NO (ACTIVE or ACTIVE_ARCIUM) question created/flagged in the DB
       if (answersError || !answersData || answersData.length === 0) {
         console.error(
-          "ERR-DAQ-H-6: No answers found for the random question we are repurposing for a cyclic gameplay"
+          "ERR-DAQ-H-6: No answers found for the random question we are repurposing for a cyclic gameplay",
         );
 
         throw new Error(
-          "ERR-DAQ-H-6: No answers found for the random question we are repurposing for a cyclic gameplay)"
+          "ERR-DAQ-H-6: No answers found for the random question we are repurposing for a cyclic gameplay)",
         );
       }
 
@@ -159,18 +160,18 @@ export async function promoteOrCreateAndCommitNewActiveQuestion(
       if ("error" in result && result.error) {
         console.error(
           "ERR-DAQ-H-7: Error adding new question and answers:",
-          result.error
+          result.error,
         );
 
         throw new Error(
-          `ERR-DAQ-H-7: Error adding new question and answers: ${result.error}`
+          `ERR-DAQ-H-7: Error adding new question and answers: ${result.error}`,
         );
       }
 
       if ("success" in result && result.success) {
         console.log(
           "New question and answers added successfully:",
-          result.questionId
+          result.questionId,
         );
 
         // HERE WE NEED TO HAVE A SPECIAL BRANCH OFF LOGIC FOR DAILY/ARCIUM AS WE HAVE TO CREAT THE OO-CHAIN POLL
@@ -179,7 +180,7 @@ export async function promoteOrCreateAndCommitNewActiveQuestion(
 
           console.log(
             "ARCIUM:nextDailyArciumPollId >>>>",
-            nextDailyArciumPollId
+            nextDailyArciumPollId,
           );
 
           if (nextDailyArciumPollId === null) {
@@ -205,7 +206,7 @@ export async function promoteOrCreateAndCommitNewActiveQuestion(
           } = await createNewOnChainArciumPoll(
             nextDailyArciumPollId,
             pollQuestionText,
-            candidateQuestionToRepurpose.id
+            candidateQuestionToRepurpose.id,
           );
 
           arciumPollId = nextDailyArciumPollId;
@@ -224,7 +225,12 @@ export async function promoteOrCreateAndCommitNewActiveQuestion(
             // ... mainly, cause the arcium poll creation patially faileded and we need to commit to the nextDailyArciumPollId anyway to avoid future issues when creating arcium polls
             console.error(
               "Error creating new on chain arcium poll:",
-              createNewOnChainArciumPollErrorMessage
+              createNewOnChainArciumPollErrorMessage,
+            );
+
+            specificNotices.push(
+              "Arcium error: Failed to create an onchain poll, so reverted to a regular poll." +
+                createNewOnChainArciumPollErrorMessage || "",
             );
           }
         }
@@ -249,7 +255,7 @@ export async function promoteOrCreateAndCommitNewActiveQuestion(
         ) {
           console.error(
             "ERR-DAQ-H-8: Error fetching UPCOMING question:",
-            newUpcomingJustCreatedQuestionError
+            newUpcomingJustCreatedQuestionError,
           );
 
           throw new Error("ERR-DAQ-H-8: Error fetching UPCOMING question:");
@@ -320,11 +326,11 @@ export async function promoteOrCreateAndCommitNewActiveQuestion(
     if (updateError) {
       console.error(
         "ERR-DAQ-H-9: Error updating question metadata:",
-        updateError
+        updateError,
       );
 
       throw new Error(
-        `ERR-DAQ-H-9: Error updating question metadata: ${updateError}`
+        `ERR-DAQ-H-9: Error updating question metadata: ${updateError}`,
       );
     }
 
@@ -377,7 +383,7 @@ export async function getAnswersFromDBForQuestion(questionId: number): Promise<{
       (ans: GameQuestionAnswer) => ({
         id: ans.id,
         text: ans.text,
-      })
+      }),
     );
 
     return {

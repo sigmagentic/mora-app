@@ -35,12 +35,12 @@ interface PrivateDataGameProps {
   onAnswerSelection: (
     question: GameQuestion,
     answer: GameQuestionAnswer,
-    answerReasoning?: string
+    answerReasoning?: string,
   ) => Promise<boolean>;
   onAnswerCommitment: (
     questionId: number,
     epochId: string,
-    answerBit: AnswerBit
+    answerBit: AnswerBit,
   ) => Promise<boolean>;
 }
 
@@ -50,7 +50,7 @@ export function PrivateDataGame({
   onAnswerCommitment,
 }: PrivateDataGameProps) {
   const [randomQuestion, setRandomQuestion] = useState<GameQuestion | null>(
-    null
+    null,
   );
   const [selectedAnswer, setSelectedAnswer] =
     useState<GameQuestionAnswer | null>(null);
@@ -69,7 +69,7 @@ export function PrivateDataGame({
     return storedLog ? storedLog.split(",").map(Number) : [];
   });
   const [lastPlayedDate, setLastPlayedDate] = useState<string>(
-    () => localStorage.getItem("x-gameplay-played-last-ddmmyy") || ""
+    () => localStorage.getItem("x-gameplay-played-last-ddmmyy") || "",
   );
   const [dailyPlayed, setDailyPlayed] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
@@ -106,7 +106,7 @@ export function PrivateDataGame({
       setDailyCountdown(
         dailyHours > 0
           ? `${dailyHours}h ${dailyMins}m ${dailySecs}s`
-          : `${dailyMins}m ${dailySecs}s`
+          : `${dailyMins}m ${dailySecs}s`,
       );
 
       const currentDate = getCurrentDateDDMMYY(now);
@@ -144,7 +144,7 @@ export function PrivateDataGame({
       setFetchingActiveQuestion(true);
 
       const res = await fetch(
-        `/api/private-data-game/get-active-question?type=${type}`
+        `/api/private-data-game/get-active-question?type=${type}`,
       );
 
       const body = await res.json();
@@ -225,7 +225,7 @@ export function PrivateDataGame({
 
       toast.error(
         "Error",
-        "Daily Arcium-Enabled Morality Question is currently offline."
+        "Daily Arcium-Enabled Morality Question is currently offline.",
       );
 
       setDailyActiveOffline(true);
@@ -245,7 +245,7 @@ export function PrivateDataGame({
       if (dailyPlayed && !BYPASS_GAME_DEV_MODE) {
         toast.error(
           "Error",
-          "You've already responded to today's daily Arcium question."
+          "You've already responded to today's daily Arcium question.",
         );
         return;
       }
@@ -259,7 +259,7 @@ export function PrivateDataGame({
       ) {
         toast.error(
           "Error",
-          "E1: You've already responded to this question during this game round/hour"
+          "E1: You've already responded to this question during this game round/hour",
         );
         return;
       }
@@ -271,13 +271,13 @@ export function PrivateDataGame({
     var subStringOfLastSavedQuestionId = currentGameSecureNoteStorage
       .substr(
         currentGameSecureNoteStorage.indexOf("questionId:"),
-        currentGameSecureNoteStorage.indexOf("question:")
+        currentGameSecureNoteStorage.indexOf("question:"),
       )
       .trim();
 
     if (subStringOfLastSavedQuestionId === `questionId: ${randomQuestion.id}`) {
       alert(
-        "E2: You've already responded to this question during this game round/hour"
+        "E2: You've already responded to this question during this game round/hour",
       );
       return;
     }
@@ -295,7 +295,7 @@ export function PrivateDataGame({
       toast.error(
         "Error",
         "Unable to commit as no answer index was given, we received: " +
-          JSON.stringify(selectedAnswer)
+          JSON.stringify(selectedAnswer),
       );
       setIsCommittingAnswer(false);
       return;
@@ -304,7 +304,7 @@ export function PrivateDataGame({
     await onAnswerCommitment(
       randomQuestion!.id,
       epochId,
-      selectedAnswer.index as AnswerBit
+      selectedAnswer.index as AnswerBit,
     );
 
     await onAnswerSelection(randomQuestion!, selectedAnswer!, reasoning);
@@ -345,8 +345,8 @@ export function PrivateDataGame({
             dailyActiveOffline
               ? "bg-gray-200 dark:bg-gray-800 border-gray-400"
               : dailyPlayed
-              ? "bg-green-200/80 dark:bg-green-900/40 border-green-600"
-              : "bg-green-200 border-green-500"
+                ? "bg-green-200/80 dark:bg-green-900/40 border-green-600"
+                : "bg-green-200 border-green-500 animate-pulse"
           } ${
             isDailyDisabled || dailyActiveOffline
               ? "cursor-not-allowed"
@@ -466,8 +466,8 @@ export function PrivateDataGame({
                       ? "bg-gradient-to-br from-green-200 to-violet-200 dark:from-green-900/50 dark:to-violet-900/50 border-violet-500 ring-2 ring-violet-300 dark:ring-violet-700 animate-pulse"
                       : "bg-green-200 border-green-500 animate-pulse"
                     : isPast
-                    ? "bg-gray-300 opacity-50"
-                    : "bg-gray-100"
+                      ? "bg-gray-300 opacity-50"
+                      : "bg-gray-100"
                 } ${
                   isFuture ||
                   isPast ||

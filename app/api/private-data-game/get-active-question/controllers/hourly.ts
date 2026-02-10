@@ -11,7 +11,7 @@ import {
 } from "./shared-logic/shared-logic";
 
 export async function hourlyController(
-  request: NextRequest
+  request: NextRequest,
 ): Promise<NextResponse> {
   try {
     const url = new URL(request.url);
@@ -34,12 +34,12 @@ export async function hourlyController(
       if (sampleQuestionError) {
         console.error(
           "ERR-DAQ-H-1: Error fetching sample question:",
-          sampleQuestionError
+          sampleQuestionError,
         );
 
         return NextResponse.json(
           { error: "ERR-DAQ-H-1: Error fetching sample question" },
-          { status: 500 }
+          { status: 500 },
         );
       }
 
@@ -85,7 +85,7 @@ export async function hourlyController(
       ) {
         console.error(
           "ERR-DAQ-H-2: Corrupted gameplay state as there are more than two active questions which should NOT happen",
-          activeQuestionsError
+          activeQuestionsError,
         );
 
         return NextResponse.json(
@@ -93,7 +93,7 @@ export async function hourlyController(
             error:
               "ERR-DAQ-H-2: Corrupted gameplay state as there are more than two active questions which should NOT happen",
           },
-          { status: 500 }
+          { status: 500 },
         );
       }
 
@@ -108,12 +108,12 @@ export async function hourlyController(
       if (selectError) {
         console.error(
           "ERR-DAQ-H-3: Error checking active question:",
-          selectError
+          selectError,
         );
 
         return NextResponse.json(
           { error: "ERR-DAQ-H-3: Error checking active question" },
-          { status: 500 }
+          { status: 500 },
         );
       }
 
@@ -121,7 +121,7 @@ export async function hourlyController(
       if (activeQuestionList && activeQuestionList.length > 1) {
         console.error(
           "ERR-DAQ-H-4: Corrupted gameplay state: multiple ACTIVE questions with same epoch_id",
-          selectError
+          selectError,
         );
 
         return NextResponse.json(
@@ -129,7 +129,7 @@ export async function hourlyController(
             error:
               "ERR-DAQ-H-4: Corrupted gameplay state: multiple ACTIVE questions with same epoch_id",
           },
-          { status: 500 }
+          { status: 500 },
         );
       }
 
@@ -157,13 +157,14 @@ export async function hourlyController(
           now,
           _targetEpochIdString,
           "AGGREGATING",
-          "ACTIVE"
+          "ACTIVE",
+          specificNotices,
         );
 
         if (promoteOrCreateNewActiveQuestionError) {
           console.error(
             "Error promoting or creating new active question:",
-            promoteOrCreateNewActiveQuestionErrorObject
+            promoteOrCreateNewActiveQuestionErrorObject,
           );
           return NextResponse.json(
             {
@@ -172,7 +173,7 @@ export async function hourlyController(
                   ?.message ||
                 "ERR-DAQ-H-13: Error promoting or creating new active question",
             },
-            { status: 500 }
+            { status: 500 },
           );
         }
 
@@ -187,7 +188,7 @@ export async function hourlyController(
       console.error("ERR-DAQ-H-10: No questions available");
       return NextResponse.json(
         { error: "ERR-DAQ-H-10: No questions available" },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -200,7 +201,7 @@ export async function hourlyController(
     if (getAnswersError || !answers) {
       console.error(
         "ERR-DAQ-H-11: Error fetching answers:",
-        getAnswersErrorObject?.message || "Unknown error"
+        getAnswersErrorObject?.message || "Unknown error",
       );
 
       return NextResponse.json(
@@ -209,7 +210,7 @@ export async function hourlyController(
             "ERR-DAQ-H-11: Error fetching answers: " +
             (getAnswersErrorObject?.message || "Unknown error"),
         },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
@@ -237,7 +238,7 @@ export async function hourlyController(
     // ... AT THIS STAGE: we are not sure the state of the DB
     return NextResponse.json(
       { error: "ERR-DAQ-H-12: Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

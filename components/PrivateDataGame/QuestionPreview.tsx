@@ -40,7 +40,7 @@ export function QuestionPreview() {
           setQuestion(hardcodedQuestion as GameQuestion);
         } else {
           const res = await fetch(
-            "/api/private-data-game/get-active-question?type=hourly&give_sample_question=1"
+            "/api/private-data-game/get-active-question?type=hourly&give_sample_question=1",
           );
 
           if (!res.ok) {
@@ -55,7 +55,7 @@ export function QuestionPreview() {
             }
           } else {
             const data = await res.json();
-            setQuestion(data.activeQuestion);
+            setQuestion(data.hourlyActive);
           }
         }
       } catch (err: any) {
