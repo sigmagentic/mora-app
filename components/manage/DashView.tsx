@@ -356,7 +356,8 @@ export function DashView({
                     const record = row as Record<string, unknown>;
                     const isAggregating =
                       sectionKey === "questions_repo" &&
-                      record.game_status === "AGGREGATING";
+                      (record.game_status === "AGGREGATING" ||
+                        record.game_status === "AGGREGATING_ARCIUM");
                     return (
                       <TableRow
                         key={idx}

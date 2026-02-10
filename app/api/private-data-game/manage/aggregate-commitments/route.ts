@@ -8,7 +8,8 @@ export const runtime = "edge";
  * POST /api/private-data-game/manage/aggregate-commitments
  * Body: { epoch_id: string }
  * Aggregates tmp_answer_bit from matching response_commitments, inserts into
- * question_aggregates, and sets questions_repo.game_status = 'FINALIZED'.
+ * question_aggregates, and sets questions_repo.game_status to 'FINALIZED' or
+ * 'FINALIZED_ARCIUM' depending on whether the question was AGGREGATING or AGGREGATING_ARCIUM.
  * Requires x-api-key header (MANAGE_API_KEY).
  */
 export async function POST(request: NextRequest) {
@@ -73,7 +74,7 @@ export async function POST(request: NextRequest) {
 
     const { data: questionRow } = await supabase
       .from("questions_repo")
-      .select("arcium_poll_id")
+      .select("arcium_poll_id, game_status")
       .eq("id", questionId)
       .maybeSingle();
 
@@ -87,11 +88,13 @@ export async function POST(request: NextRequest) {
       aggregation_commitment: aggregationCommitment,
       aggregation_source: "DB",
     };
-    const arciumPollId = (questionRow as { arcium_poll_id?: number } | null)
-      ?.arcium_poll_id;
+    const qRow = questionRow as { arcium_poll_id?: number; game_status?: string } | null;
+    const arciumPollId = qRow?.arcium_poll_id;
     if (arciumPollId != null) {
       insertPayload.arcium_poll_id = arciumPollId;
     }
+    const finalStatus =
+      qRow?.game_status === "AGGREGATING_ARCIUM" ? "FINALIZED_ARCIUM" : "FINALIZED";
 
     const { error: insertErr } = await supabase
       .from("question_aggregates")
@@ -104,7 +107,7 @@ export async function POST(request: NextRequest) {
 
     const { error: updateErr } = await supabase
       .from("questions_repo")
-      .update({ game_status: "FINALIZED" })
+      .update({ game_status: finalStatus })
       .eq("epoch_id", epochId);
 
     if (updateErr) {

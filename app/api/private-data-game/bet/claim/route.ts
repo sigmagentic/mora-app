@@ -54,8 +54,8 @@ export async function POST(request: NextRequest) {
     }
 
     if (
-      question.game_status !== "FINALIZED" &&
-      question.game_status !== "DEACTIVATE"
+      question.game_status !== "FINALIZED_ARCIUM" &&
+      question.game_status !== "DEACTIVATE_ARCIUM"
     ) {
       return NextResponse.json(
         { error: "Market is not claimable yet" },
@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
     let xpToClaim = 0;
     let referenceText = "";
 
-    if (question.game_status === "DEACTIVATE") {
+    if (question.game_status === "DEACTIVATE_ARCIUM") {
       xpToClaim = myTotalBet;
       referenceText = `bet refund q${questionId} epoch ${epochId}`;
     } else {
@@ -173,7 +173,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const taskCode = question.game_status === "DEACTIVATE" ? 4 : 3;
+    const taskCode = question.game_status === "DEACTIVATE_ARCIUM" ? 4 : 3;
     const { error: xpErr } = await supabase.from("user_xp").insert({
       user_id: session.userId,
       points: xpToClaim,

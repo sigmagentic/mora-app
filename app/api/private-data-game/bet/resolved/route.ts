@@ -26,7 +26,7 @@ type AggregateRow = {
 
 /**
  * GET /api/private-data-game/bet/resolved
- * Returns resolved bet markets (FINALIZED or DEACTIVATE) that had bets.
+ * Returns resolved bet markets (FINALIZED_ARCIUM or DEACTIVATE_ARCIUM) that had bets.
  */
 export async function GET() {
   try {
@@ -60,7 +60,7 @@ export async function GET() {
     const { data: questions, error: qErr } = await supabase
       .from("questions_repo")
       .select("id, title, img, text, epoch_id, game_status, closes_at")
-      .in("game_status", ["FINALIZED", "DEACTIVATE"]);
+      .in("game_status", ["FINALIZED_ARCIUM", "DEACTIVATE_ARCIUM"]);
 
     if (qErr) {
       console.error("bet/resolved questions error:", qErr);
@@ -155,7 +155,7 @@ export async function GET() {
       const key = `${q.id}:${q.epoch_id}`;
       const agg = aggMap.get(key);
       const resolutionType =
-        q.game_status === "FINALIZED" ? "FINALIZED" : "DEACTIVATE";
+        q.game_status === "FINALIZED_ARCIUM" ? "FINALIZED" : "DEACTIVATE";
       const winningAnswer =
         resolutionType === "FINALIZED" && agg ? agg.winning_answer : null;
 
