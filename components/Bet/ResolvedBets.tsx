@@ -85,8 +85,8 @@ function ResolvedRow({
   const a0 = item.myBets.answer0;
   const a1 = item.myBets.answer1;
   const betParts: string[] = [];
-  if (a0 > 0) betParts.push(`${a0} XP on "answer 1" }`);
-  if (a1 > 0) betParts.push(`${a1} XP on "answer 2"}`);
+  if (a0 > 0) betParts.push(`${a0} XP on "answer 1"`);
+  if (a1 > 0) betParts.push(`${a1} XP on "answer 2"`);
   const betSummary =
     betParts.length > 0 ? `You bet ${betParts.join(" and ")}.` : "";
 
@@ -219,8 +219,8 @@ function ResolvedRow({
           {participated && (
             <div className="pt-1 flex flex-wrap items-center gap-2">
               {item.myClaimed != null ? (
-                <span className="text-sm text-gray-600">
-                  Claimed {item.myClaimed} XP
+                <span className="text-[9px] text-gray-600">
+                  ✅{` `}Claimed {item.myClaimed} XP
                 </span>
               ) : item.canClaim ? (
                 <>
