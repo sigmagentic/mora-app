@@ -1,7 +1,7 @@
 {
   "crons": [
     {
-      "path": "/api/cron/keepalive",
+      "path": "/api/cron/aggregate-arcium-question",
       "schedule": "0 0 * * *"
     },
     {
