@@ -174,7 +174,7 @@ function ResolvedRow({
           {isRefund ? (
             <Badge
               variant="secondary"
-              className="bg-amber-100 text-amber-800 border-amber-200"
+              className="bg-amber-100 text-amber-800 border-amber-200 text-[9px]"
             >
               <RotateCcw className="h-3 w-3 mr-1" />
               Market cancelled – refund available

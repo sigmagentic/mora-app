@@ -3,6 +3,7 @@ import { verifyAuthenticationResponse } from "@simplewebauthn/server";
 import { supabase } from "@/lib/supabase";
 import { createVerifyAuthenticationConfig, origin, rpID } from "@/lib/webauthn";
 import { createToken } from "@/lib/auth-utils";
+import { sendSigmaAppSlackAlert } from "@/lib/slack";
 
 export const runtime = "edge";
 
@@ -16,7 +17,7 @@ export async function POST(request: NextRequest) {
     if (!credential || !expectedChallenge) {
       return NextResponse.json(
         { error: "Missing required fields" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -41,7 +42,7 @@ export async function POST(request: NextRequest) {
           prf_vmk_iv,
           solana_wallet
         )
-      `
+      `,
       )
       .eq("credential_id", credentialId)
       .single();
@@ -53,7 +54,7 @@ export async function POST(request: NextRequest) {
       console.error("Credential not found error:", credError);
       return NextResponse.json(
         { error: "Credential not found" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -72,8 +73,8 @@ export async function POST(request: NextRequest) {
       // Parse the clientDataJSON to get the actual origin
       const clientDataJSON = JSON.parse(
         Buffer.from(credential.response.clientDataJSON, "base64url").toString(
-          "utf-8"
-        )
+          "utf-8",
+        ),
       );
       const credentialOrigin = clientDataJSON.origin;
 
@@ -98,18 +99,18 @@ export async function POST(request: NextRequest) {
               "Invalid origin - not a subdomain of RP ID:",
               originHost,
               "vs",
-              rpID
+              rpID,
             );
             return NextResponse.json(
               { error: "Invalid origin for this RP ID" },
-              { status: 400 }
+              { status: 400 },
             );
           }
         } catch (urlError) {
           console.error("Invalid origin URL:", credentialOrigin);
           return NextResponse.json(
             { error: "Invalid origin format" },
-            { status: 400 }
+            { status: 400 },
           );
         }
       }
@@ -130,9 +131,9 @@ export async function POST(request: NextRequest) {
           JSON.parse(
             Buffer.from(
               storedCredential.credential_public_key.substring(2),
-              "hex"
-            ).toString("utf8")
-          ).data
+              "hex",
+            ).toString("utf8"),
+          ).data,
         ),
         counter: storedCredential.counter,
         transports: storedCredential.transports,
@@ -192,12 +193,14 @@ export async function POST(request: NextRequest) {
       maxAge: 60 * 60 * 24 * 7, // 7 days
     });
 
+    await sendSigmaAppSlackAlert(`👤✅ New user joined!`, "MORA");
+
     return response;
   } catch (error) {
     console.error("Login complete error:", error);
     return NextResponse.json(
       { error: "Internal server error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
