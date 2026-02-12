@@ -1,5 +1,3 @@
-import https from "https";
-
 export const sendSigmaAppSlackAlert = async function (
   text: string,
   appSource: string,
@@ -17,80 +15,30 @@ export const sendSigmaAppSlackAlert = async function (
   const MAX_WAIT_TIME_MS = 5000; // 5 seconds max wait
 
   try {
-    const url = new URL(process.env.SLACK_ALERTS_WEBHOOK!);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(
+      () => controller.abort(),
+      MAX_WAIT_TIME_MS,
+    );
 
-    const payload = JSON.stringify({
-      text,
-    });
-
-    const options = {
-      hostname: url.hostname,
-      port: url.port ? parseInt(url.port, 10) : 443,
-      path: url.pathname + url.search,
+    const response = await fetch(process.env.SLACK_ALERTS_WEBHOOK!, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Content-Length": Buffer.byteLength(payload),
-      },
-    };
-
-    // Create a promise that resolves when the request completes
-    const requestPromise = new Promise((resolve) => {
-      const req = https.request(options, (res) => {
-        let responseData = "";
-
-        // Consume response data to prevent memory leaks
-        res.on("data", (chunk) => {
-          responseData += chunk;
-        });
-
-        res.on("end", () => {
-          if (res.statusCode === 200) {
-            resolve({ success: true, statusCode: res.statusCode });
-          } else {
-            console.error(
-              "Slack webhook failed:",
-              res.statusCode,
-              responseData,
-            );
-            resolve({
-              success: false,
-              statusCode: res.statusCode,
-              error: responseData,
-            });
-          }
-        });
-      });
-
-      req.on("error", (err) => {
-        console.error("Slack webhook error:", err);
-        resolve({ success: false, error: err.message });
-      });
-
-      // Set timeout on the request
-      req.setTimeout(MAX_WAIT_TIME_MS, () => {
-        req.destroy();
-        console.warn("Slack webhook request timed out after 5 seconds");
-        resolve({ success: false, error: "Request timeout" });
-      });
-
-      req.write(payload);
-      req.end();
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }),
+      signal: controller.signal,
     });
 
-    // Create a timeout promise (backup)
-    const timeoutPromise = new Promise((resolve) => {
-      setTimeout(() => {
-        console.warn(
-          "Slack webhook wait time exceeded 5 seconds, continuing...",
-        );
-        resolve({ success: false, error: "Timeout exceeded" });
-      }, MAX_WAIT_TIME_MS);
-    });
+    clearTimeout(timeoutId);
 
-    // Race between request completion and timeout - whichever finishes first
-    await Promise.race([requestPromise, timeoutPromise]);
+    if (response.status !== 200) {
+      const responseData = await response.text();
+      console.error("Slack webhook failed:", response.status, responseData);
+    }
   } catch (error) {
-    console.error("Error sending Slack alert:", error);
+    if (error instanceof Error && error.name === "AbortError") {
+      console.warn("Slack webhook request timed out after 5 seconds");
+    } else {
+      console.error("Error sending Slack alert:", error);
+    }
   }
 };
