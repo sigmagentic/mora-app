@@ -193,7 +193,7 @@ export async function POST(request: NextRequest) {
       maxAge: 60 * 60 * 24 * 7, // 7 days
     });
 
-    await sendSigmaAppSlackAlert(`👤✅ New user joined!`, "MORA");
+    await sendSigmaAppSlackAlert(`👤 Login complete`);
 
     return response;
   } catch (error) {

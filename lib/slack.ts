@@ -1,14 +1,6 @@
-export const sendSigmaAppSlackAlert = async function (
-  text: string,
-  appSource: string,
-) {
+export const sendSigmaAppSlackAlert = async function (text: string) {
   if (process.env.SLACK_ALERTS_WEBHOOK === "false") {
     console.warn("Slack webhook not configured");
-    return;
-  }
-
-  // only sending Slack alerts for sigma app source
-  if (!appSource || appSource !== "sigma") {
     return;
   }
 
@@ -16,15 +8,12 @@ export const sendSigmaAppSlackAlert = async function (
 
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(
-      () => controller.abort(),
-      MAX_WAIT_TIME_MS,
-    );
+    const timeoutId = setTimeout(() => controller.abort(), MAX_WAIT_TIME_MS);
 
     const response = await fetch(process.env.SLACK_ALERTS_WEBHOOK!, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text }),
+      body: JSON.stringify({ text: `MORA: ${text}` }),
       signal: controller.signal,
     });
 

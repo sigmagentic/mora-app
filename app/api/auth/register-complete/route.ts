@@ -205,7 +205,7 @@ export async function POST(request: NextRequest) {
         .eq("code", inviteCode.trim());
     }
 
-    await sendSigmaAppSlackAlert(`👤 User logged in`, "MORA");
+    await sendSigmaAppSlackAlert(`👤 Register complete`);
 
     return response;
   } catch (error) {

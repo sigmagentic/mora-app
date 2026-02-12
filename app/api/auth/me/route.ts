@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic";
 export const runtime = "edge";
 import { getServerSession } from "@/lib/auth-utils";
 import { supabase } from "@/lib/supabase";
+import { sendSigmaAppSlackAlert } from "@/lib/slack";
 
 export async function GET() {
   try {
@@ -16,7 +17,7 @@ export async function GET() {
     const { data: user } = await supabase
       .from("users")
       .select(
-        "id, username, email, display_name, kek_salt, vmk_iv, encrypted_vmk, prf_vmk_iv, prf_encrypted_vmk, solana_wallet"
+        "id, username, email, display_name, kek_salt, vmk_iv, encrypted_vmk, prf_vmk_iv, prf_encrypted_vmk, solana_wallet",
       )
       .eq("id", session.userId)
       .single();
@@ -33,6 +34,8 @@ export async function GET() {
       Array.isArray(xpResult) && xpResult[0]?.total_xp != null
         ? Number(xpResult[0].total_xp)
         : 0;
+
+    await sendSigmaAppSlackAlert(`👤 User auth me hit`);
 
     return NextResponse.json({
       user: {
