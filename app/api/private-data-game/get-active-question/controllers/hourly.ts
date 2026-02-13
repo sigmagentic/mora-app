@@ -9,6 +9,7 @@ import {
   closeOtherActive,
   getAnswersFromDBForQuestion,
 } from "./shared-logic/shared-logic";
+import { sendMoraAppSlackAlert } from "@/lib/slack";
 
 export async function hourlyController(
   request: NextRequest,
@@ -62,7 +63,7 @@ export async function hourlyController(
 
       Rules:
       1. _targetEpochIdString = current LIVE epoch_id
-      2. At most TWO ACTIVE total (or zero on first play) can be seen at any time. Abort if >2 (corrupted).      
+      2. At most TWO ACTIVE total (or zero on first play) can be seen at any time. Abort if >2 (corrupted). if this happens, we reboot the ACTIVEs to DEACTIVATE      
       3. If one ACTIVE with epoch_id === _targetEpochIdString: use it, get answers, return. Close other ACTIVE (different epoch).
       4. If none: get a UPCOMING, set game_status=ACTIVE, epoch_id, opens_at, closes_at (UTC hour). Close other ACTIVE (different epoch).
       4.1 Note on UPCOMING selection: If no UPCOMING questions are found intially during querying, create a new one using our cyclic gameplay logic where we recycle/clone an existing FINALIZED or AGGREGATING question and answers and resave it as a UPCOMING question.
@@ -83,15 +84,44 @@ export async function hourlyController(
         activeQuestionsData &&
         activeQuestionsData.length > 2
       ) {
+        // this seems like a valid race condition case as i saw it when 2 plp tried to play a new hour a close enough time
+        // ... if this happens, we should just reset all the ACTIVE questions to DEACTIVATE
+        // ... but let's fail the current user reuest that triggered this issue, he may try again and it should go into the scenario where start again
         console.error(
-          "ERR-DAQ-H-2: Corrupted gameplay state as there are more than two active questions which should NOT happen",
-          activeQuestionsError,
+          "ERR-DAQ-H-2: Corrupted gameplay state as there are more than two active questions which should NOT happen.",
+          { count: activeQuestionsData.length, activeQuestionsData },
         );
+
+        specificNotices.push(
+          "ERR-DAQ-H-2: Corrupted gameplay state. Rebooting all active questions...",
+        );
+
+        // ... we should reset all the ACTIVE questions to DEACTIVATE
+        const { error: rebootAllActiveQuestionsError } = await supabase
+          .from("questions_repo")
+          .update({ game_status: "DEACTIVATE" })
+          .eq("game_status", "ACTIVE");
+
+        if (rebootAllActiveQuestionsError) {
+          console.error(
+            "Error resetting active questions to DEACTIVATE:",
+            rebootAllActiveQuestionsError,
+          );
+
+          specificNotices.push(
+            "ERR-DAQ-H-2: Corrupted gameplay state. We are investigating...",
+          );
+
+          await sendMoraAppSlackAlert(
+            "ERR-DAQ-H-2: Corrupted gameplay state. We are investigating...",
+          );
+        }
 
         return NextResponse.json(
           {
             error:
               "ERR-DAQ-H-2: Corrupted gameplay state as there are more than two active questions which should NOT happen",
+            specificNotices,
           },
           { status: 500 },
         );
@@ -124,10 +154,15 @@ export async function hourlyController(
           selectError,
         );
 
+        specificNotices.push(
+          "ERR-DAQ-H-4: Corrupted gameplay state: multiple questions with same epoch_id",
+        );
+
         return NextResponse.json(
           {
             error:
               "ERR-DAQ-H-4: Corrupted gameplay state: multiple ACTIVE questions with same epoch_id",
+            specificNotices,
           },
           { status: 500 },
         );

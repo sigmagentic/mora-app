@@ -3,7 +3,7 @@ import { verifyAuthenticationResponse } from "@simplewebauthn/server";
 import { supabase } from "@/lib/supabase";
 import { createVerifyAuthenticationConfig, origin, rpID } from "@/lib/webauthn";
 import { createToken } from "@/lib/auth-utils";
-import { sendSigmaAppSlackAlert } from "@/lib/slack";
+import { sendMoraAppSlackAlert } from "@/lib/slack";
 
 export const runtime = "edge";
 
@@ -193,7 +193,7 @@ export async function POST(request: NextRequest) {
       maxAge: 60 * 60 * 24 * 7, // 7 days
     });
 
-    await sendSigmaAppSlackAlert(`👤 Login complete`);
+    await sendMoraAppSlackAlert(`👤 Login complete`);
 
     return response;
   } catch (error) {

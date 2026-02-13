@@ -84,38 +84,29 @@ export async function promoteOrCreateAndCommitNewActiveQuestion(
     if (newUpcomingQuestionError || !newUpcomingQuestionData) {
       console.log("NO UPCOMING QUESTIONS FOUND, CREATING A CYCLIC GAMEPLAY");
 
-      // Best effort to get a random one, start by fetching FINALIZED/AGGREGATING and pick one in JS using Math.random()
-      const {
-        data: randomChoicesForNextQuestion,
-        error: randomChoicesForNextQuestionError,
-      } = await supabase
-        .from("questions_repo")
-        .select("*")
-        .in("game_status", ["FINALIZED", "AGGREGATING"]); // we can just used AGGREGATING and FINALIZED (no need to find specfic ones for ARCIUM for e.g)
-
-      const randomPrevFinalizedQuestionData =
-        randomChoicesForNextQuestion && randomChoicesForNextQuestion.length > 0
-          ? [
-              randomChoicesForNextQuestion[
-                Math.floor(Math.random() * randomChoicesForNextQuestion.length)
-              ],
-            ]
-          : [];
+      // Best effort to get the next one, just find the oldest (using created_at) regardless of state)
+      const { data: oldestQuestion, error: oldestQuestionError } =
+        await supabase
+          .from("questions_repo")
+          .select("*")
+          .order("created_at", { ascending: true })
+          .limit(1)
+          .single();
 
       // ABORT: we can't proceed, so just return an HTTP Error
       // ... AT THIS STAGE: there is NO (ACTIVE or ACTIVE_ARCIUM) question created/flagged in the DB
-      if (randomChoicesForNextQuestionError) {
+      if (oldestQuestionError || !oldestQuestion) {
         console.error(
-          "ERR-DAQ-H-5: Error random prev finalized question:",
-          randomChoicesForNextQuestionError,
+          "ERR-DAQ-H-5: Error getting oldest question:",
+          oldestQuestionError,
         );
 
         throw new Error("ERR-DAQ-H-5: No questions available");
       }
 
-      const candidateQuestionToRepurpose = randomPrevFinalizedQuestionData[0];
+      const candidateQuestionToRepurpose = oldestQuestion;
 
-      // we have a random question we can now repurpose for a cyclic gameplay, so get's it's answers
+      // we have a oldest question we can now repurpose for a cyclic gameplay, so get's it's answers
       const { data: answersData, error: answersError } = await supabase
         .from("question_answers")
         .select("*")

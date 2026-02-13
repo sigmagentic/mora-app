@@ -4,7 +4,7 @@ export const dynamic = "force-dynamic";
 export const runtime = "edge";
 import { getServerSession } from "@/lib/auth-utils";
 import { supabase } from "@/lib/supabase";
-import { sendSigmaAppSlackAlert } from "@/lib/slack";
+import { sendMoraAppSlackAlert } from "@/lib/slack";
 
 export async function GET() {
   try {
@@ -35,7 +35,7 @@ export async function GET() {
         ? Number(xpResult[0].total_xp)
         : 0;
 
-    await sendSigmaAppSlackAlert(`👤 User auth me hit`);
+    await sendMoraAppSlackAlert(`👤 User auth me hit`);
 
     return NextResponse.json({
       user: {

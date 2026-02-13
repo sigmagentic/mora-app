@@ -1,4 +1,4 @@
-export const sendSigmaAppSlackAlert = async function (text: string) {
+export const sendMoraAppSlackAlert = async function (text: string) {
   if (process.env.SLACK_ALERTS_WEBHOOK === "false") {
     console.warn("Slack webhook not configured");
     return;

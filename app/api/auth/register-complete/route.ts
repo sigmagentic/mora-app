@@ -3,7 +3,7 @@ import { verifyRegistrationResponse } from "@simplewebauthn/server";
 import { supabase } from "@/lib/supabase";
 import { createVerifyRegistrationConfig, origin, rpID } from "@/lib/webauthn";
 import { createToken, setAuthCookie } from "@/lib/auth-utils";
-import { sendSigmaAppSlackAlert } from "@/lib/slack";
+import { sendMoraAppSlackAlert } from "@/lib/slack";
 
 export const runtime = "edge";
 
@@ -205,7 +205,7 @@ export async function POST(request: NextRequest) {
         .eq("code", inviteCode.trim());
     }
 
-    await sendSigmaAppSlackAlert(`👤 Register complete`);
+    await sendMoraAppSlackAlert(`👤 Register complete`);
 
     return response;
   } catch (error) {

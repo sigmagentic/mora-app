@@ -9,11 +9,7 @@ import {
   closeOtherActive,
   getAnswersFromDBForQuestion,
 } from "./shared-logic/shared-logic";
-// import {
-//   createNewOnChainArciumPoll,
-//   getNextArciumPollId,
-//   ARCIUM_FINALIZATION_TIMEOUT_MSG,
-// } from "@/app/api/private-data-game/arcium-mxe-logic/arcium-mxe-logic";
+import { sendMoraAppSlackAlert } from "@/lib/slack";
 
 export async function dailyController(
   request: NextRequest,
@@ -41,7 +37,7 @@ export async function dailyController(
 
       Rules:
       1. _targetEpochIdString = current LIVE epoch_id
-      2. At most TWO ACTIVE_ARCIUM total (or zero on first play) can be seen at any time. Abort if >2 (corrupted).      
+      2. At most TWO ACTIVE_ARCIUM total (or zero on first play) can be seen at any time. Abort if >2 (corrupted). if this happens, we reboot the ACTIVE_ARCIUMs to DEACTIVE_ARCIUM      
       3. If one ACTIVE_ARCIUM with epoch_id === _targetEpochIdString: use it, get answers, return. Close other ACTIVE_ARCIUM (different epoch).
       4. If none: get a UPCOMING, set game_status=ACTIVE_ARCIUM, epoch_id, opens_at, closes_at (UTC hour). Close other ACTIVE_ARCIUM (different epoch).
       4.1 Note on UPCOMING selection: If no UPCOMING questions are found intially during querying, create a new one using our cyclic gameplay logic where we recycle/clone an existing FINALIZED or AGGREGATING_ARCIUM question and answers and resave it as a UPCOMING question.
@@ -62,15 +58,44 @@ export async function dailyController(
       activeQuestionsData &&
       activeQuestionsData.length > 2
     ) {
+      // this seems like a valid race condition case as i saw it when 2 plp tried to play a new hour a close enough time
+      // ... if this happens, we should just reset all the ACTIVE_ARCIUM questions to DEACTIVATE_ARCIUM
+      // ... but let's fail the current user reuest that triggered this issue, he may try again and it should go into the scenario where start again
       console.error(
-        "ERR-DAQ-H-2: Corrupted gameplay state as there are more than two active questions which should NOT happen",
+        "ERR-DAQ-D-2: Corrupted gameplay state as there are more than two active questions which should NOT happen",
         activeQuestionsError,
       );
+
+      specificNotices.push(
+        "ERR-DAQ-D-2: Corrupted gameplay state. Rebooting all active questions...",
+      );
+
+      // ... we should reset all the ACTIVE_ARCIUM questions to DEACTIVATE_ARCIUM
+      const { error: rebootAllActiveQuestionsError } = await supabase
+        .from("questions_repo")
+        .update({ game_status: "DEACTIVATE_ARCIUM" })
+        .eq("game_status", "ACTIVE_ARCIUM");
+
+      if (rebootAllActiveQuestionsError) {
+        console.error(
+          "Error resetting active questions to DEACTIVATE_ARCIUM:",
+          rebootAllActiveQuestionsError,
+        );
+
+        specificNotices.push(
+          "ERR-DAQ-H-2: Corrupted gameplay state. We are investigating...",
+        );
+
+        await sendMoraAppSlackAlert(
+          "ERR-DAQ-H-2: Corrupted gameplay state. We are investigating...",
+        );
+      }
 
       return NextResponse.json(
         {
           error:
-            "ERR-DAQ-H-2: Corrupted gameplay state as there are more than two active questions which should NOT happen",
+            "ERR-DAQ-D-2: Corrupted gameplay state as there are more than two active questions which should NOT happen",
+          specificNotices,
         },
         { status: 500 },
       );
@@ -86,12 +111,12 @@ export async function dailyController(
 
     if (selectError) {
       console.error(
-        "ERR-DAQ-H-3: Error checking active question:",
+        "ERR-DAQ-D-3: Error checking active question:",
         selectError,
       );
 
       return NextResponse.json(
-        { error: "ERR-DAQ-H-3: Error checking active question" },
+        { error: "ERR-DAQ-D-3: Error checking active question" },
         { status: 500 },
       );
     }
@@ -99,14 +124,18 @@ export async function dailyController(
     // Corrupted: more than one ACTIVE_ARCIUM with same epoch_id.
     if (activeQuestionList && activeQuestionList.length > 1) {
       console.error(
-        "ERR-DAQ-H-4: Corrupted gameplay state: multiple ACTIVE_ARCIUM questions with same epoch_id",
+        "ERR-DAQ-D-4: Corrupted gameplay state: multiple ACTIVE_ARCIUM questions with same epoch_id",
         selectError,
+      );
+
+      specificNotices.push(
+        "ERR-DAQ-D-4: Corrupted gameplay state: multiple questions with same epoch_id",
       );
 
       return NextResponse.json(
         {
           error:
-            "ERR-DAQ-H-4: Corrupted gameplay state: multiple ACTIVE_ARCIUM questions with same epoch_id",
+            "ERR-DAQ-D-4: Corrupted gameplay state: multiple ACTIVE_ARCIUM questions with same epoch_id",
         },
         { status: 500 },
       );
@@ -154,7 +183,7 @@ export async function dailyController(
           {
             error:
               (promoteOrCreateNewActiveQuestionErrorObject as Error)?.message ||
-              "ERR-DAQ-H-13: Error promoting or creating new active question",
+              "ERR-DAQ-D-13: Error promoting or creating new active question",
           },
           { status: 500 },
         );
@@ -169,11 +198,11 @@ export async function dailyController(
 
     // We should never have an empty an empty activeQuestionData, but do one final check
     // ABORT: we can't proceed, so just return an HTTP Error
-    // ... AT THIS STAGE: there MAYBE an ACTIVE question created/flagged in the DB, we need to look at logs to figure out what happened above
+    // ... AT THIS STAGE: there MAYBE an ACTIVE_ARCIUM question created/flagged in the DB, we need to look at logs to figure out what happened above
     if (!activeQuestionData) {
-      console.error("ERR-DAQ-H-10: No questions available");
+      console.error("ERR-DAQ-D-10: No questions available");
       return NextResponse.json(
-        { error: "ERR-DAQ-H-10: No questions available" },
+        { error: "ERR-DAQ-D-10: No questions available" },
         { status: 500 },
       );
     }
@@ -186,14 +215,14 @@ export async function dailyController(
 
     if (getAnswersError || !answers) {
       console.error(
-        "ERR-DAQ-H-11: Error fetching answers:",
+        "ERR-DAQ-D-11: Error fetching answers:",
         getAnswersErrorObject?.message || "Unknown error",
       );
 
       return NextResponse.json(
         {
           error:
-            "ERR-DAQ-H-11: Error fetching answers: " +
+            "ERR-DAQ-D-11: Error fetching answers: " +
             (getAnswersErrorObject?.message || "Unknown error"),
         },
         { status: 500 },
@@ -234,12 +263,12 @@ export async function dailyController(
       specificNotices,
     });
   } catch (error) {
-    console.error("ERR-DAQ-H-12: Error fetching hourly question:", error);
+    console.error("ERR-DAQ-D-12: Error fetching hourly question:", error);
 
     // ABORT: we can't proceed, so just return an HTTP Error
     // ... AT THIS STAGE: we are not sure the state of the DB
     return NextResponse.json(
-      { error: "ERR-DAQ-H-12: Internal server error" },
+      { error: "ERR-DAQ-D-12: Internal server error" },
       { status: 500 },
     );
   }
